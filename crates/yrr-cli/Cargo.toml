@@ -1,0 +1,21 @@
+[package]
+name = "yrr-cli"
+description = "CLI for the yrr agent orchestrator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "yrr-cli"
+path = "src/main.rs"
+
+[dependencies]
+yrr-core = { workspace = true }
+yrr-bus = { workspace = true }
+yrr-runtime = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+serde_json = { workspace = true }

@@ -1,0 +1,23 @@
+swarm:
+  name: design-debate
+  description: >
+    A designer creates a proposal, sends it to a critic for three rounds
+    of review, revises after each round, then publishes the final design.
+
+  agents:
+    designer:
+      use: agents/designer
+      lifecycle:
+        mode: persistent
+        max_activations: 4
+        die_on: [done]
+
+    critic:
+      use: agents/critic
+      lifecycle:
+        mode: persistent
+        max_activations: 3
+        die_on: [done]
+
+  entry: topic
+  done: [done]

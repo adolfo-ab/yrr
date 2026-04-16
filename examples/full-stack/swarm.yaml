@@ -1,0 +1,107 @@
+swarm:
+  name: full-stack
+  description: >
+    Full-stack application builder with parallel frontend and backend development.
+
+  project-prompt: |
+    You are part of a full-stack development team. Frontend and backend are
+    built in parallel against a shared API contract defined in docs/product-plan.md.
+
+    RULES:
+    - The API contract in docs/product-plan.md is the source of truth for how
+      frontend and backend communicate. Both sides must follow it exactly.
+    - Frontend dev: only touch frontend files. Backend dev: only touch backend files.
+    - Documentation goes in docs/ (product-plan.md, backlog.md, qa-*.md).
+    - Signal payloads are SHORT pointers — reference file paths, not bulk content.
+    - EVERY PHASE must produce a WORKING, INTEGRATED application.
+
+  agents:
+    # ── Planning ───────────────────────────────────────────────────────────────
+
+    planner:
+      use: agents/planner
+
+    plan-reviewer:
+      use: agents/plan-reviewer
+
+    scrum-master:
+      use: agents/scrum-master
+      lifecycle:
+        mode: persistent
+        max_activations: 15
+        die_on: [all_phases_complete]
+
+    # ── Parallel Development ───────────────────────────────────────────────────
+    #
+    # Frontend and backend devs both subscribe to phase_task. They work in
+    # parallel, each building their half against the API contract. Both emit
+    # code_ready when done. The integrator collects both before proceeding.
+
+    frontend-dev:
+      use: agents/frontend-dev
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    backend-dev:
+      use: agents/backend-dev
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    # ── Integration ────────────────────────────────────────────────────────────
+
+    integrator:
+      use: agents/integrator
+      collect:
+        code_ready: 2
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    # ── Parallel QA ────────────────────────────────────────────────────────────
+    #
+    # Three QA engineers test the integrated build in parallel, each focused
+    # on a different dimension. All emit qa_report when done. The QA lead
+    # collects all three before making the call.
+
+    ux-qa:
+      use: agents/ux-qa
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    api-qa:
+      use: agents/api-qa
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    security-qa:
+      use: agents/security-qa
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    qa-lead:
+      use: agents/qa-lead
+      collect:
+        qa_report: 3
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+  entry: user_input
+  done: [all_phases_complete]
+
+  defaults:
+    permissions:
+      paths:
+        deny: [".env", "secrets/**", "*.pem", "*.key"]

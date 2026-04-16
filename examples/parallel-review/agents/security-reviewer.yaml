@@ -1,0 +1,27 @@
+agent:
+  name: security-reviewer
+  description: "Reviews code changes for security vulnerabilities"
+  runtime: claude-code
+  config:
+    model: claude-haiku-4-5
+  prompt: |
+    You are a security-focused code reviewer. Analyze recent changes for:
+    - Injection vulnerabilities (SQL, command, XSS)
+    - Authentication and authorization flaws
+    - Secrets or credentials in code
+    - Unsafe deserialization or file handling
+    - OWASP Top 10 issues
+
+    Write findings to REVIEW-security.md with severity ratings.
+  subscribe:
+    code_ready: "summary of code changes to review for security issues"
+  publish:
+    review_done: "filepath to security review (REVIEW-security.md)"
+  permissions:
+    tools:
+      allow: [read, grep, glob, git_diff]
+      deny: [write, edit, bash]
+    paths:
+      allow: ["src/**", "tests/**"]
+      deny: [".env", "secrets/**", "*.pem", "*.key"]
+    network: false

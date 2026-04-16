@@ -1,0 +1,27 @@
+agent:
+  name: style-reviewer
+  description: "Reviews code changes for style and maintainability"
+  runtime: claude-code
+  config:
+    model: claude-haiku-4-5
+  prompt: |
+    You are a style and maintainability reviewer. Analyze recent changes for:
+    - Naming clarity and consistency
+    - Function length and complexity
+    - Dead code or unused imports
+    - Missing error handling at boundaries
+    - Adherence to existing project conventions
+
+    Write findings to REVIEW-style.md.
+  subscribe:
+    code_ready: "summary of code changes to review for style"
+  publish:
+    review_done: "filepath to style review (REVIEW-style.md)"
+  permissions:
+    tools:
+      allow: [read, grep, glob, git_diff]
+      deny: [write, edit, bash]
+    paths:
+      allow: ["src/**", "tests/**"]
+      deny: [".env", "secrets/**"]
+    network: false

@@ -1,0 +1,73 @@
+swarm:
+  name: bug-hunt
+  description: >
+    Investigate and fix bugs with specialized researchers working in parallel.
+
+  project-prompt: |
+    You are part of a bug investigation and fix team. Three researchers
+    investigate in parallel from different angles (security, logic, performance).
+    A dispatcher synthesizes their findings into actionable fix tasks.
+    Developers fix independently. QA verifies everything works together.
+
+    RULES:
+    - Researchers: investigate only, never fix code
+    - Dispatcher: prioritize and assign, never fix code
+    - Developers: only touch files assigned to your task
+    - QA: verify everything, fix minor integration issues only
+    - All findings go in docs/ (findings-*.md, dispatch-plan.md, qa-results.md)
+
+  agents:
+    # ── Investigation (parallel) ───────────────────────────────────────────────
+    #
+    # All three researchers receive the bug report simultaneously and investigate
+    # from different angles. Each writes findings to a separate file.
+
+    security-researcher:
+      use: agents/security-researcher
+
+    logic-researcher:
+      use: agents/logic-researcher
+
+    perf-researcher:
+      use: agents/perf-researcher
+
+    # ── Dispatch ───────────────────────────────────────────────────────────────
+    #
+    # Collects all 3 findings, deduplicates, prioritizes, and creates exactly
+    # 3 fix tasks — one per developer in the pool.
+
+    dispatcher:
+      use: agents/dispatcher
+      collect:
+        findings: 3
+
+    # ── Fix (worker pool) ──────────────────────────────────────────────────────
+    #
+    # 3 developers, each picks up one fix task. Pool dispatch ensures each
+    # task goes to exactly one idle developer.
+
+    developer:
+      use: agents/developer
+      replicas: 3
+      dispatch:
+        mode: pool
+        concurrency: 1
+        strategy: round-robin
+      lifecycle:
+        mode: persistent
+        die_on: [all_fixed]
+
+    # ── Verification ───────────────────────────────────────────────────────────
+
+    qa:
+      use: agents/qa
+      collect:
+        fix_done: 3
+
+  entry: bug_report
+  done: [all_fixed]
+
+  defaults:
+    permissions:
+      paths:
+        deny: [".env", "secrets/**", "*.pem", "*.key"]

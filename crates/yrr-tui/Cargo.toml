@@ -1,0 +1,25 @@
+[package]
+name = "yrr-tui"
+description = "Terminal UI for yrr swarm visualization"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "yrr"
+path = "src/main.rs"
+
+[dependencies]
+yrr-core = { workspace = true }
+yrr-bus = { workspace = true }
+yrr-runtime = { workspace = true }
+tokio = { workspace = true }
+clap = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+ratatui = { workspace = true }
+crossterm = { workspace = true, features = ["event-stream"] }
+futures = { workspace = true }

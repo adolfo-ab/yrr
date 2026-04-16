@@ -1,0 +1,26 @@
+# yrr configuration
+
+[safety]
+# Hard cap on activations per agent, regardless of lifecycle config.
+# Prevents runaway loops from misconfigured persistent agents.
+max_activations = 5
+
+[defaults]
+# Default model when not specified in agent config.
+# Uncomment to set a global default:
+# model = "claude-haiku-4-5"
+
+# Default max_turns when not specified in agent config.
+# Uncomment to set a global default:
+# max_turns = 5
+
+[claude]
+# How Claude Code handles tool permissions in non-interactive mode.
+#
+# "auto"   — translate agent permissions.tools.allow into --allowedTools
+#             (recommended: agents can only use explicitly allowed tools)
+# "bypass" — pass --dangerously-skip-permissions
+#             (agents can do anything — use with caution)
+# "none"   — no permission flags
+#             (most tools will be denied in --print mode)
+permission_mode = "auto"

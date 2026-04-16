@@ -1,0 +1,22 @@
+swarm:
+  name: dev-qa
+  description: >
+    A developer implements a task, QA reviews the code and spawns fixer
+    agents for any bugs found (up to 3 concurrent). Fixers run in
+    parallel and the swarm waits for all of them to finish.
+
+  agents:
+    developer:
+      use: agents/developer
+
+    qa:
+      use: agents/qa
+
+    fixer:
+      use: agents/fixer
+      spawn:
+        on: bug_found
+        max: 3
+
+  entry: task
+  done: [qa_passed]

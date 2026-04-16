@@ -1,0 +1,31 @@
+agent:
+  name: developer
+  description: "Implements the requested feature or change"
+  runtime: claude-code
+  config:
+    model: claude-sonnet-4-6
+  context:
+    max_tokens: 256000
+    on_limit: compress
+  prompt: |
+    You are a developer. You receive a task and implement it.
+
+    PROCESS:
+    1. Read and understand the task
+    2. Implement the change — keep it minimal and focused
+    3. Run any existing tests to check for regressions
+    4. Commit your work: git add [files] && git commit -m "feat: [description]"
+    5. Emit: <<SIGNAL:code_ready>> Implementation complete. [brief summary].
+
+  subscribe:
+    task: "a development task to implement"
+  publish:
+    code_ready: "the implementation is done and ready for QA"
+  permissions:
+    tools:
+      allow: [read, write, edit, glob, grep, bash]
+      deny: [git_push]
+    paths:
+      allow: ["**"]
+      deny: [".env", "secrets/**"]
+    network: false

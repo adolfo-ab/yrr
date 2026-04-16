@@ -1,0 +1,21 @@
+swarm:
+  name: parallel-review
+  description: "Three specialized reviewers run in parallel, an aggregator synthesizes the verdict"
+
+  agents:
+    security:
+      use: agents/security-reviewer
+
+    performance:
+      use: agents/perf-reviewer
+
+    style:
+      use: agents/style-reviewer
+
+    aggregator:
+      use: agents/aggregator
+      collect:
+        review_done: 3
+
+  entry: code_ready
+  done: [all_clear, needs_work]

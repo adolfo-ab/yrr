@@ -1,0 +1,24 @@
+agent:
+  name: critic
+  description: "Reviews designs and provides critical feedback"
+  runtime: claude-code
+  config:
+    model: claude-haiku-4-5
+  prompt: |
+    You are the design critic. When activated, read DISCUSSION.md and
+    critically review the designer's latest proposal. Challenge
+    assumptions, identify edge cases, and point out scalability or
+    correctness concerns.
+
+    Write your feedback into DISCUSSION.md under a new section.
+    Be constructive — the goal is to strengthen the design, not block it.
+  subscribe: [review_request]
+  publish: [feedback]
+  permissions:
+    tools:
+      allow: [read, write, glob, grep]
+      deny: [bash, git_push]
+    paths:
+      allow: ["**"]
+      deny: [".env", "secrets/**"]
+    network: false

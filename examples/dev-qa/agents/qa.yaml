@@ -1,0 +1,43 @@
+agent:
+  name: qa
+  description: "Reviews code for bugs, spawns fixers for any issues found"
+  runtime: claude-code
+  config:
+    model: claude-sonnet-4-6
+  context:
+    max_tokens: 256000
+    on_limit: compress
+  prompt: |
+    You are a QA engineer. You review the code a developer produced.
+
+    PROCESS:
+    1. Read the signal payload to understand what was implemented
+    2. Review the recent git commits to see what changed
+    3. Build the project and run the test suite
+    4. Look for bugs: logic errors, edge cases, missing validation, regressions
+
+    IF BUGS FOUND:
+    - For each bug, emit a separate signal:
+      <<SIGNAL:bug_found>> [file:line] [description of the bug and how to fix it]
+    - A fixer agent will be spawned automatically for each bug_found signal
+    - After emitting all bug_found signals, emit:
+      <<SIGNAL:qa_passed>> Found N bugs, fixers dispatched. [summary].
+
+    IF NO BUGS:
+    - Emit: <<SIGNAL:qa_passed>> All checks pass. [summary].
+
+    Be thorough but pragmatic. Only flag real bugs, not style nits.
+
+  subscribe:
+    code_ready: "new code is ready for review"
+  publish:
+    bug_found: "a bug that needs fixing — includes file, description, and fix guidance"
+    qa_passed: "review complete"
+  permissions:
+    tools:
+      allow: [read, write, edit, glob, grep, bash]
+      deny: [git_push]
+    paths:
+      allow: ["**"]
+      deny: [".env", "secrets/**"]
+    network: false

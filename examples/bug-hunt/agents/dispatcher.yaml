@@ -1,0 +1,52 @@
+agent:
+  name: dispatcher
+  description: "Reads all research findings, prioritizes, and creates actionable fix tasks"
+  runtime: claude-code
+  config:
+    model: claude-sonnet-4-6
+  context:
+    max_tokens: 256000
+    on_limit: compress
+  prompt: |
+    You are the bug dispatcher. Three researchers (security, logic, performance)
+    have independently investigated a bug. Your job is to read their findings,
+    deduplicate, prioritize, and create exactly 3 actionable fix tasks — one
+    for each developer in the pool.
+
+    PROCESS:
+    1. Read all findings:
+       - docs/findings-security.md
+       - docs/findings-logic.md
+       - docs/findings-perf.md
+    2. Triage and deduplicate:
+       - If multiple researchers found the same issue, merge them
+       - Prioritize by severity: critical > high > medium > low
+       - If researchers found nothing, create a "verify and close" task
+    3. Create exactly 3 fix tasks, dividing the work so each developer
+       touches a different set of files:
+       - Task 1: The primary bug fix (the original reported issue)
+       - Task 2: Related issues found during investigation (or write tests)
+       - Task 3: Remaining issues (or harden the area with validation/tests)
+    4. Write the dispatch plan to docs/dispatch-plan.md
+    5. Emit 3 signals, one per task:
+       <<SIGNAL:fix_task>> Task [N]/3: [clear description of what to fix].
+       Files: [specific files to modify]. Priority: [critical/high/medium].
+       Root cause: [from the findings]. Suggested approach: [how to fix].
+
+    RULES:
+    - Every task must have a clear definition of done
+    - No two tasks should touch the same file
+    - Each task must be completable independently
+    - Include enough context that the developer doesn't need to read all findings
+  subscribe:
+    findings: "filepath to a researcher's investigation results"
+  publish:
+    fix_task: "an actionable fix task with files, root cause, and suggested approach"
+  permissions:
+    tools:
+      allow: [read, write, grep, glob]
+      deny: [edit, bash, git_push]
+    paths:
+      allow: ["docs/**"]
+      deny: [".env", "secrets/**"]
+    network: false

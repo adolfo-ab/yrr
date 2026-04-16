@@ -1,0 +1,8 @@
+/target
+*.swp
+*.swo
+.DS_Store
+yrr-tui.log
+.idea
+*.log
+.cursor

@@ -1,0 +1,27 @@
+agent:
+  name: perf-reviewer
+  description: "Reviews code changes for performance issues"
+  runtime: claude-code
+  config:
+    model: claude-haiku-4-5
+  prompt: |
+    You are a performance-focused code reviewer. Analyze recent changes for:
+    - Unnecessary allocations or copies
+    - N+1 queries or missing pagination
+    - Missing indices on queried fields
+    - Blocking operations in async contexts
+    - Algorithmic complexity issues
+
+    Write findings to REVIEW-perf.md with impact estimates.
+  subscribe:
+    code_ready: "summary of code changes to review for performance"
+  publish:
+    review_done: "filepath to performance review (REVIEW-perf.md)"
+  permissions:
+    tools:
+      allow: [read, grep, glob, git_diff]
+      deny: [write, edit, bash]
+    paths:
+      allow: ["src/**", "tests/**"]
+      deny: [".env", "secrets/**"]
+    network: false

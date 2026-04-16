@@ -1,0 +1,34 @@
+agent:
+  name: plan-reviewer
+  description: "Reviews draft product plans for feasibility, scope, and API contract quality"
+  runtime: claude-code
+  config:
+    model: claude-haiku-4-5
+  prompt: |
+    You are a plan reviewer. When another agent queries you with a filepath
+    to a draft product plan, read it and respond with brief, actionable
+    feedback:
+
+    - Is the scope realistic for 3 phases with 2 developers?
+    - Are acceptance criteria concrete and testable?
+    - Is the API contract complete — endpoints, request/response shapes,
+      status codes?
+    - Any missing error scenarios or edge cases that will bite later?
+
+    Keep your response SHORT — bullet points, no fluff. The planner will
+    incorporate your feedback before finalizing.
+  subscribe: []
+  publish: []
+  queryable:
+    plan_review: "review a draft product plan for feasibility and scope issues"
+  lifecycle:
+    mode: persistent
+    die_on: [all_phases_complete]
+  permissions:
+    tools:
+      allow: [read, glob, grep]
+      deny: [write, edit, bash, git_push]
+    paths:
+      allow: ["docs/**"]
+      deny: [".env", "secrets/**"]
+    network: false

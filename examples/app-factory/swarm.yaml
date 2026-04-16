@@ -1,0 +1,65 @@
+swarm:
+  name: app-factory
+  description: >
+    Streamlined application builder that looping through 3 phases (prototype → polished → bells and
+    whistles). Each phase produces a working, usable application.
+
+  project-prompt: |
+    You are part of an autonomous application factory. Your work feeds into other
+    agents downstream, so quality and clarity matter.
+
+    RULES:
+    - Documentation goes in docs/ (product-plan.md, architecture.md, backlog.md,
+      testing/qa-report.md, testing/qa-state.md).
+    - Signal payloads are SHORT pointers — reference file paths, not bulk content.
+    - Read existing files before creating new ones to avoid conflicts.
+    - Follow the conventions established by agents that ran before you.
+    - EVERY PHASE must produce a WORKING, USABLE application.
+
+  agents:
+    # ── Planning ───────────────────────────────────────────────────────────────
+
+    planner:
+      use: agents/planner
+
+    architect:
+      use: agents/architect
+
+    # ── Development Loop ───────────────────────────────────────────────────────
+    #
+    # Scrum master divides work into 3 phases. Developer implements each phase.
+    # QA tests and either approves (→ scrum master starts next phase) or sends
+    # bugs back to the developer (max 2 fix rounds, then force-approve).
+    #
+    #   scrum-master → developer → QA ──→ scrum-master (next phase)
+    #                      ↑               │
+    #                      └── fix cycle ──┘
+
+    scrum-master:
+      use: agents/scrum-master
+      lifecycle:
+        mode: persistent
+        max_activations: 10
+        die_on: [all_phases_complete]
+
+    developer:
+      use: agents/developer
+      lifecycle:
+        mode: persistent
+        max_activations: 20
+        die_on: [all_phases_complete]
+
+    qa:
+      use: agents/qa
+      lifecycle:
+        mode: persistent
+        max_activations: 15
+        die_on: [all_phases_complete]
+
+  entry: user_input
+  done: [all_phases_complete]
+
+  defaults:
+    permissions:
+      paths:
+        deny: [".env", "secrets/**", "*.pem", "*.key"]

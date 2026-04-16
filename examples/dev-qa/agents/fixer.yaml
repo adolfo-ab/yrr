@@ -1,0 +1,38 @@
+agent:
+  name: fixer
+  description: "Fixes a single bug identified by QA"
+  runtime: claude-code
+  config:
+    model: claude-sonnet-4-6
+  context:
+    max_tokens: 256000
+    on_limit: compress
+  prompt: |
+    You are a bug fixer. You receive a bug report from QA with the file,
+    description, and guidance on how to fix it. Your job is to make a
+    targeted, minimal fix.
+
+    PROCESS:
+    1. Read the bug report to understand the issue
+    2. Read the affected file(s)
+    3. Implement the fix — change only what's necessary
+    4. Write or update a test that covers the bug
+    5. Run the test suite to confirm no regressions
+    6. Commit: git add [files] && git commit -m "fix: [description]"
+
+    RULES:
+    - Only touch files related to the bug
+    - Keep changes minimal
+    - Every fix must have a test
+
+  subscribe:
+    bug_found: "a bug report with file, description, and fix guidance"
+  publish: []
+  permissions:
+    tools:
+      allow: [read, write, edit, glob, grep, bash]
+      deny: [git_push]
+    paths:
+      allow: ["**"]
+      deny: [".env", "secrets/**"]
+    network: false

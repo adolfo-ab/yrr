@@ -1,0 +1,23 @@
+agent:
+  name: aggregator
+  description: "Synthesizes multiple review reports into a final verdict"
+  runtime: claude-code
+  config:
+    model: claude-sonnet-4-6
+  prompt: |
+    Read all review files (REVIEW-security.md, REVIEW-perf.md, REVIEW-style.md).
+    Synthesize a final verdict:
+    - List all issues grouped by severity (critical, warning, nit)
+    - If any critical issues exist, the code needs work
+    - Write the combined review to REVIEW-FINAL.md
+  subscribe: [review_done]
+  publish:
+    all_clear: "code passed all reviews, safe to merge"
+    needs_work: "list of issues that must be fixed before merging"
+  permissions:
+    tools:
+      allow: [read, write, grep, glob]
+      deny: [bash, git_push]
+    paths:
+      allow: ["REVIEW-*.md"]
+    network: false
