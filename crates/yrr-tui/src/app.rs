@@ -38,14 +38,14 @@ pub enum GraphView {
     Inspect,
 }
 
-/// State for the seed input prompt.
+/// State for the initial prompt dialog.
 #[derive(Debug, Clone)]
-pub struct SeedInput {
+pub struct PromptInput {
     pub text: String,
     pub cursor: usize,
 }
 
-impl SeedInput {
+impl PromptInput {
     pub fn new(prefill: &str) -> Self {
         Self {
             cursor: prefill.len(),
@@ -278,25 +278,32 @@ impl AgentInfo {
 
         let dispatch_desc = agent.dispatch.as_ref().map(|d| format!("{d:?}"));
 
-        let permissions = agent.def.permissions.as_ref().map(|p| {
-            PermissionsInfo {
-                tools_allow: p.tools.as_ref().map(|t| t.allow.clone()).unwrap_or_default(),
-                tools_deny: p.tools.as_ref().map(|t| t.deny.clone()).unwrap_or_default(),
-                paths_allow: p.paths.as_ref().map(|t| t.allow.clone()).unwrap_or_default(),
-                paths_deny: p.paths.as_ref().map(|t| t.deny.clone()).unwrap_or_default(),
-                network: p.network,
-            }
+        let permissions = agent.def.permissions.as_ref().map(|p| PermissionsInfo {
+            tools_allow: p
+                .tools
+                .as_ref()
+                .map(|t| t.allow.clone())
+                .unwrap_or_default(),
+            tools_deny: p.tools.as_ref().map(|t| t.deny.clone()).unwrap_or_default(),
+            paths_allow: p
+                .paths
+                .as_ref()
+                .map(|t| t.allow.clone())
+                .unwrap_or_default(),
+            paths_deny: p.paths.as_ref().map(|t| t.deny.clone()).unwrap_or_default(),
+            network: p.network,
         });
 
         let context_desc = agent.def.context.as_ref().map(|ctx| {
-            format!("max_tokens: {}, on_limit: {:?}", ctx.max_tokens, ctx.on_limit)
+            format!(
+                "max_tokens: {}, on_limit: {:?}",
+                ctx.max_tokens, ctx.on_limit
+            )
         });
 
-        let steer_desc = agent.def.steer.as_ref().map(|s| {
-            match s {
-                yrr_core::schema::Steer::Enabled => "true".to_string(),
-                yrr_core::schema::Steer::Described(d) => d.clone(),
-            }
+        let steer_desc = agent.def.steer.as_ref().map(|s| match s {
+            yrr_core::schema::Steer::Enabled => "true".to_string(),
+            yrr_core::schema::Steer::Described(d) => d.clone(),
         });
 
         let spawn_info = agent.spawn.as_ref().map(|s| SpawnInfo {
@@ -381,11 +388,11 @@ pub struct App {
     /// Whether the user wants to start running the swarm.
     pub run_requested: bool,
 
-    /// Active seed input prompt (Preview mode).
-    pub seed_input: Option<SeedInput>,
+    /// Active initial prompt dialog (Preview mode).
+    pub prompt_input: Option<PromptInput>,
 
-    /// The resolved seed message to use when running.
-    pub seed: Option<String>,
+    /// The resolved prompt message to use when running.
+    pub prompt: Option<String>,
 
     /// Whether the user wants to open a file in the editor.
     pub open_editor_request: Option<PathBuf>,
@@ -428,7 +435,7 @@ impl App {
         swarm_path: PathBuf,
         graph: GraphState,
         agent_info: Vec<AgentInfo>,
-        seed: Option<String>,
+        prompt: Option<String>,
     ) -> Self {
         let steerable_agents: Vec<String> = agent_info
             .iter()
@@ -454,8 +461,8 @@ impl App {
             selected_node: 0,
             inspect_scroll: 0,
             run_requested: false,
-            seed_input: None,
-            seed,
+            prompt_input: None,
+            prompt,
             open_editor_request: None,
             graph_scroll: (0, 0),
             spinner_frame: 0,
@@ -471,13 +478,13 @@ impl App {
     }
 
     fn is_spawn_agent(&self, name: &str) -> bool {
-        self.agent_info.iter().any(|a| a.swarm_key == name && a.spawn.is_some())
+        self.agent_info
+            .iter()
+            .any(|a| a.swarm_key == name && a.spawn.is_some())
     }
 
     pub fn elapsed_secs(&self) -> u64 {
-        self.start_time
-            .map(|t| t.elapsed().as_secs())
-            .unwrap_or(0)
+        self.start_time.map(|t| t.elapsed().as_secs()).unwrap_or(0)
     }
 
     /// Get the list of selectable (non-virtual) node IDs in navigation order.
@@ -542,7 +549,7 @@ impl App {
         let vw = view_width as i32;
         let vh = view_height as i32;
         let h_margin = 4i32;
-        // Vertical margin large enough to keep virtual seed/done nodes visible
+        // Vertical margin large enough to keep virtual prompt/done nodes visible
         // when navigating to agents near the graph edges.
         let v_margin = (NODE_HEIGHT + layout::LAYER_SPACING) as i32;
 
@@ -607,9 +614,9 @@ impl App {
                 return;
             }
 
-            // Seed input mode intercepts all keys.
-            if self.seed_input.is_some() {
-                self.handle_seed_input_key(key.code, key.modifiers);
+            // Prompt input mode intercepts all keys.
+            if self.prompt_input.is_some() {
+                self.handle_prompt_input_key(key.code, key.modifiers);
                 return;
             }
 
@@ -675,16 +682,16 @@ impl App {
         }
     }
 
-    fn handle_seed_input_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
-        let input = self.seed_input.as_mut().unwrap();
+    fn handle_prompt_input_key(&mut self, code: KeyCode, modifiers: KeyModifiers) {
+        let input = self.prompt_input.as_mut().unwrap();
         match code {
             KeyCode::Esc => {
-                self.seed_input = None;
+                self.prompt_input = None;
             }
             KeyCode::Enter => {
                 let text = input.text.trim().to_string();
-                self.seed = if text.is_empty() { None } else { Some(text) };
-                self.seed_input = None;
+                self.prompt = if text.is_empty() { None } else { Some(text) };
+                self.prompt_input = None;
                 self.run_requested = true;
             }
             KeyCode::Backspace => {
@@ -749,9 +756,9 @@ impl App {
                 KeyCode::Char('E') => {
                     self.open_editor_request = Some(self.swarm_path.clone());
                 }
-                // Run the swarm — open seed input prompt.
+                // Run the swarm — open initial prompt dialog.
                 KeyCode::Char('r') => {
-                    self.open_seed_input();
+                    self.open_prompt_input();
                 }
                 _ => {}
             },
@@ -782,9 +789,9 @@ impl App {
                         }
                     }
                 }
-                // Run the swarm — open seed input prompt.
+                // Run the swarm — open initial prompt dialog.
                 KeyCode::Char('r') => {
-                    self.open_seed_input();
+                    self.open_prompt_input();
                 }
                 _ => {}
             },
@@ -810,13 +817,11 @@ impl App {
                     self.steer_selecting_agent = false;
                 }
                 KeyCode::Up | KeyCode::Char('k') => {
-                    self.steer_agent_selector =
-                        self.steer_agent_selector.saturating_sub(1);
+                    self.steer_agent_selector = self.steer_agent_selector.saturating_sub(1);
                 }
                 KeyCode::Down | KeyCode::Char('j') => {
                     let max = self.steerable_agents.len().saturating_sub(1);
-                    self.steer_agent_selector =
-                        (self.steer_agent_selector + 1).min(max);
+                    self.steer_agent_selector = (self.steer_agent_selector + 1).min(max);
                 }
                 KeyCode::Enter => {
                     let agent = self.steerable_agents[self.steer_agent_selector].clone();
@@ -878,9 +883,9 @@ impl App {
         }
     }
 
-    fn open_seed_input(&mut self) {
-        let prefill = self.seed.as_deref().unwrap_or("");
-        self.seed_input = Some(SeedInput::new(prefill));
+    fn open_prompt_input(&mut self) {
+        let prefill = self.prompt.as_deref().unwrap_or("");
+        self.prompt_input = Some(PromptInput::new(prefill));
     }
 
     fn handle_running_keys(&mut self, code: KeyCode) {
@@ -1259,11 +1264,11 @@ impl App {
                     payload: None,
                 });
             }
-            SwarmEvent::SeedInjected { signal } => {
+            SwarmEvent::PromptInjected { signal } => {
                 self.signal_count += 1;
                 self.logs.push(LogEntry {
                     timestamp: Utc::now(),
-                    agent_name: "seed".into(),
+                    agent_name: "prompt".into(),
                     event_type: "injected".into(),
                     detail: signal.clone(),
                     payload: None,
@@ -1353,7 +1358,11 @@ impl App {
 /// Truncate a payload for inline display in the log view.
 /// Replaces newlines with spaces and caps length.
 fn truncate_for_log(s: &str, max_len: usize) -> String {
-    let oneline: String = s.trim().chars().map(|c| if c == '\n' { ' ' } else { c }).collect();
+    let oneline: String = s
+        .trim()
+        .chars()
+        .map(|c| if c == '\n' { ' ' } else { c })
+        .collect();
     if oneline.len() <= max_len {
         oneline
     } else {

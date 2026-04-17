@@ -12,20 +12,21 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                 GraphView::Overview => {
                     "[←↑↓→] navigate  [Shift+←→] scroll  [Enter] inspect  [e] edit  [r] run  [q] quit"
                 }
-                GraphView::Inspect => {
-                    "[↑↓] scroll  [Esc] back  [e] edit  [r] run  [q] back"
-                }
+                GraphView::Inspect => "[↑↓] scroll  [Esc] back  [e] edit  [r] run  [q] back",
             };
-            let selected = app
-                .selected_node_id()
-                .unwrap_or("-");
+            let selected = app.selected_node_id().unwrap_or("-");
             let text = format!(
                 " {} | agents: {} | selected: {} | {keys}",
                 app.swarm_name,
                 app.agent_info.len(),
                 selected,
             );
-            (text, Style::default().bg(theme::STATUS_PREVIEW_BG).fg(theme::STATUS_PREVIEW_FG))
+            (
+                text,
+                Style::default()
+                    .bg(theme::STATUS_PREVIEW_BG)
+                    .fg(theme::STATUS_PREVIEW_FG),
+            )
         }
         Phase::Running => {
             let elapsed = app.elapsed_secs();
@@ -48,21 +49,28 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                 " {} | {}m {:02}s | agents: {} | signals: {} | {keys}",
                 app.swarm_name, mins, secs, app.active_agents, app.signal_count,
             );
-            (text, Style::default().bg(theme::STATUS_RUNNING_BG).fg(theme::STATUS_RUNNING_FG))
+            (
+                text,
+                Style::default()
+                    .bg(theme::STATUS_RUNNING_BG)
+                    .fg(theme::STATUS_RUNNING_FG),
+            )
         }
         Phase::Finished => {
             let elapsed = app.elapsed_secs();
             let mins = elapsed / 60;
             let secs = elapsed % 60;
-            let status = app
-                .outcome_text
-                .as_deref()
-                .unwrap_or("finished");
+            let status = app.outcome_text.as_deref().unwrap_or("finished");
             let text = format!(
                 " {} | {}m {:02}s | agents: {} | signals: {} | {status} | [q] quit",
                 app.swarm_name, mins, secs, app.active_agents, app.signal_count,
             );
-            (text, Style::default().bg(theme::STATUS_FINISHED_BG).fg(theme::STATUS_FINISHED_FG))
+            (
+                text,
+                Style::default()
+                    .bg(theme::STATUS_FINISHED_BG)
+                    .fg(theme::STATUS_FINISHED_FG),
+            )
         }
     };
 

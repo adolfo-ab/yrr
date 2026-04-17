@@ -17,11 +17,7 @@ pub fn parse_queries(output: &str) -> Vec<EmittedQuery> {
 }
 
 /// Generic marker parser. Finds `{prefix}name>> payload` patterns in output.
-fn parse_markers<T>(
-    output: &str,
-    prefix: &str,
-    build: fn(String, String) -> T,
-) -> Vec<T> {
+fn parse_markers<T>(output: &str, prefix: &str, build: fn(String, String) -> T) -> Vec<T> {
     let mut results = Vec::new();
     let marker_end = ">>";
 

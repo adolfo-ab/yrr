@@ -78,10 +78,7 @@ pub fn validate_swarm(swarm: &ResolvedSwarm) -> ValidationResult {
     for agent in &swarm.agents {
         for signal in agent.def.publish.names() {
             all_emitted.insert(signal);
-            emitted_by
-                .entry(signal)
-                .or_default()
-                .push(&agent.swarm_key);
+            emitted_by.entry(signal).or_default().push(&agent.swarm_key);
         }
         for signal in agent.def.subscribe.names() {
             all_listened.insert(signal);
@@ -258,8 +255,7 @@ pub fn validate_swarm(swarm: &ResolvedSwarm) -> ValidationResult {
                 });
             }
 
-            let subscribed: HashSet<&str> =
-                agent.def.subscribe.names().collect();
+            let subscribed: HashSet<&str> = agent.def.subscribe.names().collect();
 
             match dispatch {
                 crate::schema::DispatchConfig::Uniform(rule) => {
@@ -407,7 +403,7 @@ mod tests {
             entry: vec!["task_received".into()],
             done: vec!["review_passed".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
@@ -419,18 +415,20 @@ mod tests {
         let wf = ResolvedSwarm {
             name: "test".into(),
             description: None,
-            agents: vec![
-                make_agent("a", &["start"], &["output", "unused_signal"]),
-            ],
+            agents: vec![make_agent("a", &["start"], &["output", "unused_signal"])],
             entry: vec!["start".into()],
             done: vec!["output".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result.warnings.iter().any(|w| w.kind == WarningKind::DeadSignal
-            && w.message.contains("unused_signal")));
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.kind == WarningKind::DeadSignal && w.message.contains("unused_signal"))
+        );
     }
 
     #[test]
@@ -438,18 +436,17 @@ mod tests {
         let wf = ResolvedSwarm {
             name: "test".into(),
             description: None,
-            agents: vec![
-                make_agent("a", &["start", "nobody_emits_this"], &["done"]),
-            ],
+            agents: vec![make_agent("a", &["start", "nobody_emits_this"], &["done"])],
             entry: vec!["start".into()],
             done: vec!["done".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result.warnings.iter().any(|w| w.kind == WarningKind::OrphanTrigger
-            && w.message.contains("nobody_emits_this")));
+        assert!(result.warnings.iter().any(
+            |w| w.kind == WarningKind::OrphanTrigger && w.message.contains("nobody_emits_this")
+        ));
     }
 
     #[test]
@@ -464,12 +461,17 @@ mod tests {
             entry: vec!["start".into()],
             done: vec!["middle".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result.warnings.iter().any(|w| w.kind == WarningKind::UnreachableAgent
-            && w.message.contains("unreachable")));
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.kind == WarningKind::UnreachableAgent
+                    && w.message.contains("unreachable"))
+        );
     }
 
     #[test]
@@ -481,14 +483,16 @@ mod tests {
             entry: vec!["start".into()],
             done: vec![],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result
-            .warnings
-            .iter()
-            .any(|w| w.kind == WarningKind::MissingDone));
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.kind == WarningKind::MissingDone)
+        );
     }
 
     #[test]
@@ -510,13 +514,16 @@ mod tests {
             entry: vec!["plan_ready".into()],
             done: vec!["code_ready".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result.warnings.iter().any(|w| {
-            w.kind == WarningKind::DispatchConcurrencyExceedsReplicas
-        }));
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| { w.kind == WarningKind::DispatchConcurrencyExceedsReplicas })
+        );
     }
 
     #[test]
@@ -544,7 +551,7 @@ mod tests {
             entry: vec!["plan_ready".into()],
             done: vec!["code_ready".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
@@ -573,13 +580,16 @@ mod tests {
             entry: vec!["plan_ready".into()],
             done: vec!["code_ready".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
-        assert!(result.warnings.iter().any(|w| {
-            w.kind == WarningKind::DispatchRequiresReplicas
-        }));
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| { w.kind == WarningKind::DispatchRequiresReplicas })
+        );
     }
 
     #[test]
@@ -604,7 +614,7 @@ mod tests {
             entry: vec!["start".into()],
             done: vec!["sub_task_ready".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);
@@ -637,7 +647,7 @@ mod tests {
             entry: vec!["plan_ready".into()],
             done: vec!["code_ready".into()],
             output: vec![],
-            seed_message: None,
+            prompt_message: None,
         };
 
         let result = validate_swarm(&wf);

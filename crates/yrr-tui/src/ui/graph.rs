@@ -216,8 +216,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             })
             .max()
             .unwrap_or(0);
-        let route_start =
-            max_node_right.max(fwd_label_right).max(stub_right) + 3;
+        let route_start = max_node_right.max(fwd_label_right).max(stub_right) + 3;
         let mut side_route_count: u16 = 0;
         for (i, (_, to, _)) in back_edge_groups.iter().enumerate() {
             if positions.contains_key(to) {
@@ -225,7 +224,6 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
                 side_route_count += 1;
             }
         }
-
     }
 
     // Collect skip-layer forward edges (edges that skip over intermediate layers).
@@ -324,11 +322,9 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         };
         let from_pos = positions.get(from).copied().unwrap_or_else(|| {
             if let Some(&(gx, gy)) = graph_positions.get(from) {
-                let sx = (gx + offset_x)
-                    .clamp(inner.x as i32, (inner.x + inner.width) as i32 - 1)
+                let sx = (gx + offset_x).clamp(inner.x as i32, (inner.x + inner.width) as i32 - 1)
                     as u16;
-                let sy = (gy + offset_y)
-                    .clamp(inner.y as i32, (inner.y + inner.height) as i32 - 1)
+                let sy = (gy + offset_y).clamp(inner.y as i32, (inner.y + inner.height) as i32 - 1)
                     as u16;
                 (sx, sy)
             } else {
@@ -337,10 +333,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         });
         {
             let any_active = app.graph.edges.iter().any(|e| {
-                e.is_back_edge
-                    && e.from == *from
-                    && e.to == *to
-                    && GraphState::is_edge_active(e)
+                e.is_back_edge && e.from == *from && e.to == *to && GraphState::is_edge_active(e)
             });
             let style = if any_active {
                 Style::default()
@@ -359,10 +352,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
             } else {
                 from_pos.1 + from_h / 2
             };
-            let to_h = node_heights
-                .get(to.as_str())
-                .copied()
-                .unwrap_or(nh_default);
+            let to_h = node_heights.get(to.as_str()).copied().unwrap_or(nh_default);
             let to_stubs = stub_counts.get(to.as_str()).copied().unwrap_or(0);
             let counter = back_y_counter.entry(to.as_str()).or_insert(0);
             let entry_y = if to_h > nh_default {
@@ -389,11 +379,7 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
     // Draw skip-layer forward edges routed to the right side.
     if !skip_edges.is_empty() {
         let nw = NODE_WIDTH as u16;
-        let max_node_right: u16 = positions
-            .values()
-            .map(|&(x, _)| x + nw)
-            .max()
-            .unwrap_or(0);
+        let max_node_right: u16 = positions.values().map(|&(x, _)| x + nw).max().unwrap_or(0);
         let base_route = back_edge_group_routes
             .iter()
             .copied()
@@ -650,7 +636,14 @@ fn draw_steer_indicator(
         set_string_clipped(buf, clip, label_x, content_y, "s", style);
     } else if avail >= 2 {
         // Minimal: "─▶"
-        set_char_clipped(buf, clip, arrow_end.saturating_sub(1), content_y, '─', style);
+        set_char_clipped(
+            buf,
+            clip,
+            arrow_end.saturating_sub(1),
+            content_y,
+            '─',
+            style,
+        );
         set_char_clipped(buf, clip, arrow_end, content_y, '▶', style);
     } else {
         // Just arrow
@@ -750,7 +743,6 @@ fn draw_edge(
         }
         set_char_clipped(buf, clip, end_x, end_y.saturating_sub(1), '▼', style);
     }
-
 }
 
 /// Draw a back edge (feedback loop) routed to the right side, going upward.
@@ -779,7 +771,14 @@ fn draw_back_edge(
 
     // Vertical upward.
     if start_y > end_y + 1 {
-        draw_vertical_line(buf, clip, route_x, end_y + 1, start_y.saturating_sub(1), style);
+        draw_vertical_line(
+            buf,
+            clip,
+            route_x,
+            end_y + 1,
+            start_y.saturating_sub(1),
+            style,
+        );
     }
 
     // Corner at top.
@@ -830,7 +829,14 @@ fn draw_skip_forward_edge(
 
     // Vertical downward.
     if turn_y > start_y + 1 {
-        draw_vertical_line(buf, clip, route_x, start_y + 1, turn_y.saturating_sub(1), style);
+        draw_vertical_line(
+            buf,
+            clip,
+            route_x,
+            start_y + 1,
+            turn_y.saturating_sub(1),
+            style,
+        );
     }
 
     // Bottom-right corner.
@@ -884,7 +890,14 @@ fn draw_query_edge(
     if start_x == end_x {
         set_char_clipped(buf, clip, start_x, start_y, '▲', style);
         if end_y > start_y + 2 {
-            draw_dashed_vertical(buf, clip, start_x, start_y + 1, end_y.saturating_sub(2), style);
+            draw_dashed_vertical(
+                buf,
+                clip,
+                start_x,
+                start_y + 1,
+                end_y.saturating_sub(2),
+                style,
+            );
         }
         set_char_clipped(buf, clip, end_x, end_y.saturating_sub(1), '▼', style);
     } else {
@@ -892,7 +905,14 @@ fn draw_query_edge(
 
         set_char_clipped(buf, clip, start_x, start_y, '▲', style);
         if mid_y > start_y + 1 {
-            draw_dashed_vertical(buf, clip, start_x, start_y + 1, mid_y.saturating_sub(1), style);
+            draw_dashed_vertical(
+                buf,
+                clip,
+                start_x,
+                start_y + 1,
+                mid_y.saturating_sub(1),
+                style,
+            );
         }
 
         if start_x < end_x {

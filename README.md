@@ -85,7 +85,7 @@ swarm:
 If you want to give it a try, clone and install from source:
 
 ```bash
-git clone https://github.com/aaguirre/yrr.git
+git clone https://github.com/adolfo-ab/yrr.git
 cd yrr
 cargo install --path crates/yrr-tui
 ```
@@ -93,7 +93,7 @@ cargo install --path crates/yrr-tui
 Then run a swarm:
 
 ```bash
-yrr path/to/swarm.yaml --seed "Build the classic snake game. Make no mistakes."
+yrr path/to/swarm.yaml --prompt "Build the classic snake game. Make no mistakes."
 ```
 
 Starts in preview mode where you can explore the swarm graph before running. It hot-reloads agent and swarm files while in preview mode.

@@ -50,7 +50,7 @@ pub fn graph_space_positions(graph: &GraphState) -> (HashMap<String, (i32, i32)>
 
 /// Build the graph model from a resolved swarm.
 ///
-/// Creates nodes for each agent, plus a virtual "seed" node.
+/// Creates nodes for each agent, plus a virtual "prompt" node.
 /// Done/output signals are shown as stubs below their publishing node.
 /// Layout uses a layered (Sugiyama-style) algorithm.
 pub fn build_graph(swarm: &ResolvedSwarm) -> GraphState {
@@ -95,10 +95,10 @@ pub fn build_graph(swarm: &ResolvedSwarm) -> GraphState {
         });
     }
 
-    // Add virtual "seed" node.
+    // Add virtual "prompt" node.
     nodes.push(GraphNode {
-        id: "__seed__".into(),
-        label: "seed".into(),
+        id: "__prompt__".into(),
+        label: "prompt".into(),
         layer: 0,
         position: 0,
         status: NodeStatus::Idle,
@@ -204,12 +204,12 @@ pub fn build_graph(swarm: &ResolvedSwarm) -> GraphState {
         }
     }
 
-    // Connect seed -> agents subscribing to entry signals.
+    // Connect prompt -> agents subscribing to entry signals.
     for entry_signal in &swarm.entry {
         if let Some(subscribers) = signal_subscribers.get(entry_signal.as_str()) {
             for sub_key in subscribers {
                 edges.push(GraphEdge {
-                    from: "__seed__".into(),
+                    from: "__prompt__".into(),
                     to: sub_key.to_string(),
                     signal: entry_signal.clone(),
                     last_fired: None,
@@ -220,7 +220,7 @@ pub fn build_graph(swarm: &ResolvedSwarm) -> GraphState {
         }
     }
 
-    // Assign layers using BFS from seed, handling cycles.
+    // Assign layers using BFS from prompt, handling cycles.
     let (layer_assignment, back_edges) = assign_layers(&nodes, &edges);
 
     // Mark back edges.
@@ -257,7 +257,7 @@ pub fn build_graph(swarm: &ResolvedSwarm) -> GraphState {
     }
 }
 
-/// Assign layers using BFS from seed node. Returns layer assignments and detected back edges.
+/// Assign layers using BFS from prompt node. Returns layer assignments and detected back edges.
 fn assign_layers(
     nodes: &[GraphNode],
     edges: &[GraphEdge],
@@ -272,16 +272,16 @@ fn assign_layers(
         }
     }
 
-    // BFS from seed.
+    // BFS from prompt.
     let mut layers: HashMap<String, usize> = HashMap::new();
     let mut visited: HashSet<String> = HashSet::new();
     let mut queue: VecDeque<(String, usize)> = VecDeque::new();
     let mut back_edges: HashSet<(String, String, String)> = HashSet::new();
 
-    // Start from seed node.
-    queue.push_back(("__seed__".to_string(), 0));
-    layers.insert("__seed__".to_string(), 0);
-    visited.insert("__seed__".to_string());
+    // Start from prompt node.
+    queue.push_back(("__prompt__".to_string(), 0));
+    layers.insert("__prompt__".to_string(), 0);
+    visited.insert("__prompt__".to_string());
 
     while let Some((current, layer)) = queue.pop_front() {
         if let Some(neighbors) = adj.get(current.as_str()) {
@@ -292,11 +292,7 @@ fn assign_layers(
                     // If the target layer <= current layer, mark as back edge.
                     if let Some(&existing_layer) = layers.get(&next_str) {
                         if existing_layer <= layer {
-                            back_edges.insert((
-                                current.clone(),
-                                next_str,
-                                signal.to_string(),
-                            ));
+                            back_edges.insert((current.clone(), next_str, signal.to_string()));
                         }
                     }
                 } else {

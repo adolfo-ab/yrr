@@ -1,12 +1,12 @@
 use async_trait::async_trait;
-use yrr_core::config::Config;
-use yrr_core::error::{YrrError, Result};
-use yrr_core::message::{AgentOutput, SignalMessage, TokenUsage};
-use yrr_core::runtime::AgentRuntime;
-use yrr_core::schema::{AgentDef, SignalList};
 use serde::Deserialize;
 use tokio::process::Command;
 use tracing::{debug, info, warn};
+use yrr_core::config::Config;
+use yrr_core::error::{Result, YrrError};
+use yrr_core::message::{AgentOutput, SignalMessage, TokenUsage};
+use yrr_core::runtime::AgentRuntime;
+use yrr_core::schema::{AgentDef, SignalList};
 
 use crate::signal_parser::{parse_queries, parse_signals};
 
@@ -154,21 +154,14 @@ impl ClaudeCodeRuntime {
     /// Build a continuation prompt for a resumed session.
     /// Skips the system instructions (already in session history) — just sends
     /// the new incoming signal.
-    fn build_continuation_prompt(
-        input: &SignalMessage,
-        subscribe: &SignalList,
-    ) -> String {
+    fn build_continuation_prompt(input: &SignalMessage, subscribe: &SignalList) -> String {
         let mut prompt = String::from("Continue your task. Here is a new incoming signal.\n");
         Self::append_incoming_signal(&mut prompt, input, subscribe);
         prompt
     }
 
     /// Append the incoming signal context to a prompt.
-    fn append_incoming_signal(
-        prompt: &mut String,
-        input: &SignalMessage,
-        subscribe: &SignalList,
-    ) {
+    fn append_incoming_signal(prompt: &mut String, input: &SignalMessage, subscribe: &SignalList) {
         prompt.push_str("\n\n--- Incoming Signal ---\n");
         prompt.push_str(&format!("Signal: {}\n", input.signal));
         prompt.push_str(&format!("From: {}\n", input.source_agent_name));
@@ -244,11 +237,8 @@ impl AgentRuntime for ClaudeCodeRuntime {
                 if let Some(perms) = &agent.permissions {
                     if let Some(tools) = &perms.tools {
                         if !tools.allow.is_empty() {
-                            let tool_names: Vec<String> = tools
-                                .allow
-                                .iter()
-                                .map(|t| map_tool_name(t))
-                                .collect();
+                            let tool_names: Vec<String> =
+                                tools.allow.iter().map(|t| map_tool_name(t)).collect();
                             cmd.arg("--allowedTools").arg(tool_names.join(","));
                         }
                     }
@@ -289,36 +279,37 @@ impl AgentRuntime for ClaudeCodeRuntime {
         let raw_output = String::from_utf8_lossy(&output.stdout).to_string();
 
         // Parse the JSON response from Claude CLI.
-        let (content, returned_session_id, usage) = match serde_json::from_str::<ClaudeJsonResponse>(&raw_output) {
-            Ok(resp) => {
-                let token_usage = resp.usage.map(|u| TokenUsage {
-                    input_tokens: u.input_tokens,
-                    output_tokens: u.output_tokens,
-                    cache_creation_input_tokens: u.cache_creation_input_tokens,
-                    cache_read_input_tokens: u.cache_read_input_tokens,
-                });
+        let (content, returned_session_id, usage) =
+            match serde_json::from_str::<ClaudeJsonResponse>(&raw_output) {
+                Ok(resp) => {
+                    let token_usage = resp.usage.map(|u| TokenUsage {
+                        input_tokens: u.input_tokens,
+                        output_tokens: u.output_tokens,
+                        cache_creation_input_tokens: u.cache_creation_input_tokens,
+                        cache_read_input_tokens: u.cache_read_input_tokens,
+                    });
 
-                if let Some(ref usage) = token_usage {
-                    info!(
-                        agent = %agent.name,
-                        input_tokens = usage.input_tokens,
-                        output_tokens = usage.output_tokens,
-                        "token usage"
-                    );
+                    if let Some(ref usage) = token_usage {
+                        info!(
+                            agent = %agent.name,
+                            input_tokens = usage.input_tokens,
+                            output_tokens = usage.output_tokens,
+                            "token usage"
+                        );
+                    }
+
+                    (resp.result, resp.session_id, token_usage)
                 }
-
-                (resp.result, resp.session_id, token_usage)
-            }
-            Err(e) => {
-                // Fallback: if JSON parsing fails, treat the raw output as text.
-                warn!(
-                    agent = %agent.name,
-                    error = %e,
-                    "failed to parse claude JSON response, falling back to raw output"
-                );
-                (raw_output, None, None)
-            }
-        };
+                Err(e) => {
+                    // Fallback: if JSON parsing fails, treat the raw output as text.
+                    warn!(
+                        agent = %agent.name,
+                        error = %e,
+                        "failed to parse claude JSON response, falling back to raw output"
+                    );
+                    (raw_output, None, None)
+                }
+            };
 
         // Log a truncated version of the agent's response.
         let response_preview = content.trim();
@@ -364,9 +355,7 @@ impl AgentRuntime for ClaudeCodeRuntime {
         if output.status.success() {
             Ok(())
         } else {
-            Err(YrrError::Runtime(
-                "claude --version failed".to_string(),
-            ))
+            Err(YrrError::Runtime("claude --version failed".to_string()))
         }
     }
 

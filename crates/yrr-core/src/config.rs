@@ -2,7 +2,7 @@ use std::path::Path;
 
 use serde::{Deserialize, Serialize};
 
-use crate::error::{YrrError, Result};
+use crate::error::{Result, YrrError};
 
 /// Top-level configuration, loaded from `yrr.toml`.
 #[derive(Debug, Clone, Deserialize, Serialize)]

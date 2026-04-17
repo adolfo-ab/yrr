@@ -53,8 +53,8 @@ pub fn render_selector(frame: &mut Frame, app: &App, area: Rect) {
 
     // Hint.
     let hint_y = inner.y + inner.height.saturating_sub(1);
-    let hint = Paragraph::new("[Enter] select  [Esc] cancel")
-        .style(Style::default().fg(theme::FG_DARK));
+    let hint =
+        Paragraph::new("[Enter] select  [Esc] cancel").style(Style::default().fg(theme::FG_DARK));
     frame.render_widget(hint, Rect::new(inner.x, hint_y, inner.width, 1));
 }
 
@@ -100,8 +100,8 @@ pub fn render(frame: &mut Frame, input: &SteerInput, area: Rect) {
     // Hint line.
     if inner.height > 1 {
         let hint_area = Rect::new(inner.x, inner.y + 2, inner.width, 1);
-        let hint = Paragraph::new("[Enter] send  [Esc] cancel")
-            .style(Style::default().fg(theme::FG_DARK));
+        let hint =
+            Paragraph::new("[Enter] send  [Esc] cancel").style(Style::default().fg(theme::FG_DARK));
         frame.render_widget(hint, hint_area);
     }
 

@@ -1,7 +1,7 @@
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
 
-use crate::app::{model_display_name, AgentInfo, App, Phase, PermissionsInfo};
+use crate::app::{AgentInfo, App, PermissionsInfo, Phase, model_display_name};
 
 use super::theme;
 
@@ -19,7 +19,11 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .title(title)
-        .title_style(Style::default().fg(theme::AQUA).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(theme::AQUA)
+                .add_modifier(Modifier::BOLD),
+        )
         .border_style(Style::default().fg(theme::BORDER_HIGHLIGHT));
 
     let inner = block.inner(area);
@@ -50,15 +54,18 @@ pub fn render(frame: &mut Frame, app: &mut App, area: Rect) {
 
     // Scroll indicator.
     if total_lines > visible {
-        let indicator = format!(" {}/{} ", scroll + 1, total_lines.saturating_sub(visible) + 1);
+        let indicator = format!(
+            " {}/{} ",
+            scroll + 1,
+            total_lines.saturating_sub(visible) + 1
+        );
         let indicator_area = Rect::new(
             area.x + area.width.saturating_sub(indicator.len() as u16 + 2),
             area.y,
             indicator.len() as u16,
             1,
         );
-        let indicator_widget = Paragraph::new(indicator)
-            .style(Style::default().fg(theme::FG_DARK));
+        let indicator_widget = Paragraph::new(indicator).style(Style::default().fg(theme::FG_DARK));
         frame.render_widget(indicator_widget, indicator_area);
     }
 }
@@ -286,10 +293,7 @@ fn build_info_lines(info: &AgentInfo, spawn_count: Option<u32>) -> Vec<Line<'sta
         dim_style,
     )));
     for line in info.prompt.lines() {
-        lines.push(Line::from(Span::styled(
-            format!("  {line}"),
-            value_style,
-        )));
+        lines.push(Line::from(Span::styled(format!("  {line}"), value_style)));
     }
     lines.push(Line::from(Span::styled(
         "  ────────────────────────────────────────",

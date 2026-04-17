@@ -22,7 +22,7 @@ pub struct GraphNode {
     pub position: usize,
     /// Current status.
     pub status: NodeStatus,
-    /// Whether this is a virtual node (seed/done).
+    /// Whether this is a virtual node (prompt/done).
     pub virtual_node: bool,
     /// Number of replicas.
     pub replicas: u32,

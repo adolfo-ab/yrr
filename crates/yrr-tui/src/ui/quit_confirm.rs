@@ -16,11 +16,7 @@ pub fn render(frame: &mut Frame, area: Rect) {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .title(" Quit? ")
-        .title_style(
-            Style::default()
-                .fg(theme::RED)
-                .add_modifier(Modifier::BOLD),
-        )
+        .title_style(Style::default().fg(theme::RED).add_modifier(Modifier::BOLD))
         .border_style(Style::default().fg(theme::BORDER_HIGHLIGHT));
 
     let inner = block.inner(dialog);

@@ -6,7 +6,7 @@ use tracing::info;
 
 use yrr_bus::bus::SignalBus;
 use yrr_bus::zenoh_bus::ZenohBus;
-use yrr_core::config::{find_config, Config};
+use yrr_core::config::{Config, find_config};
 use yrr_core::loader::{load_swarm, resolve_swarm};
 use yrr_core::message::SignalMessage;
 use yrr_core::validation::validate_swarm;
@@ -29,9 +29,9 @@ enum Commands {
     Run {
         /// Path to the swarm YAML file
         swarm: PathBuf,
-        /// Initial seed message to inject
+        /// Initial prompt message to inject
         #[arg(long)]
-        seed: Option<String>,
+        prompt: Option<String>,
         /// Timeout in seconds — swarm exits after this duration
         #[arg(long)]
         timeout: Option<u64>,
@@ -93,9 +93,9 @@ async fn main() -> Result<()> {
     match cli.command {
         Commands::Run {
             swarm,
-            seed,
+            prompt,
             timeout,
-        } => cmd_run(swarm, seed, timeout, &config).await,
+        } => cmd_run(swarm, prompt, timeout, &config).await,
         Commands::Validate { swarm } => cmd_validate(swarm),
         Commands::Inject {
             signal,
@@ -112,7 +112,7 @@ async fn main() -> Result<()> {
 
 async fn cmd_run(
     swarm_path: PathBuf,
-    seed: Option<String>,
+    prompt: Option<String>,
     timeout: Option<u64>,
     config: &Config,
 ) -> Result<()> {
@@ -123,8 +123,7 @@ async fn cmd_run(
     let wf_def = load_swarm(&swarm_path)
         .with_context(|| format!("failed to load swarm: {}", swarm_path.display()))?;
 
-    let resolved = resolve_swarm(&wf_def, base_dir)
-        .context("failed to resolve swarm")?;
+    let resolved = resolve_swarm(&wf_def, base_dir).context("failed to resolve swarm")?;
 
     // Validate and print warnings.
     let validation = validate_swarm(&resolved);
@@ -135,7 +134,7 @@ async fn cmd_run(
     let runner = SwarmRunner {
         resolved,
         config: config.clone(),
-        seed,
+        prompt,
         timeout: timeout.map(std::time::Duration::from_secs),
         event_tx: None,
     };
@@ -163,8 +162,7 @@ fn cmd_validate(swarm_path: PathBuf) -> Result<()> {
 
     println!("Validating {}...", swarm_path.display());
 
-    let resolved = resolve_swarm(&wf_def, base_dir)
-        .context("failed to resolve swarm")?;
+    let resolved = resolve_swarm(&wf_def, base_dir).context("failed to resolve swarm")?;
 
     println!("  Resolved {} agents", resolved.agents.len());
 
@@ -187,7 +185,7 @@ async fn cmd_inject(signal: String, message: String, namespace: Option<String>) 
         .await
         .context("failed to open zenoh bus")?;
 
-    let msg = SignalMessage::seed(&signal, &message);
+    let msg = SignalMessage::prompt(&signal, &message);
     info!(signal = %signal, namespace = %ns, "injecting signal");
     bus.publish(&signal, &msg).await?;
 

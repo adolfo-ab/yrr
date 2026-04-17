@@ -22,7 +22,7 @@ agent:
     1. Read docs/product-plan.md for the API contract and data models
     2. Set up the backend project (framework, deps, entry point, database)
     3. Implement the API endpoints for phase 1
-    4. Seed any initial data needed for the frontend to render something
+    4. Add any initial data needed for the frontend to render something
 
     ALL PHASES:
     1. Read the phase task — focus on the BACKEND section

@@ -50,7 +50,7 @@ Dependencies: `tokio`, `yrr-core`, `yrr-bus`, `tracing`.
 
 The user-facing binary.
 
-- `yrr run <swarm.yaml> [--seed "message"]` — load, validate, run
+- `yrr run <swarm.yaml> [--prompt "message"]` — load, validate, run
 - `yrr validate <swarm.yaml>` — schema + signal graph validation
 - `yrr inject <signal> <message>` — inject into running swarm
 - `yrr list` — list available agents/swarms
@@ -62,7 +62,7 @@ Dependencies: `clap`, `tokio`, `tracing-subscriber`, `yrr-core`, `yrr-bus`, `yrr
 ## Data Flow
 
 ```
-User: yrr run dev-pipeline.yaml --seed "Add login"
+User: yrr run dev-pipeline.yaml --prompt "Add login"
                     │
                     ▼
             ┌──────────────┐
@@ -91,10 +91,10 @@ User: yrr run dev-pipeline.yaml --seed "Add login"
 ### Signal flow for dev-pipeline
 
 ```
-1. CLI publishes seed → yrr/dev-pipeline/task_received
+1. CLI publishes the initial prompt → yrr/dev-pipeline/task_received
 
 2. Planner sidecar receives task_received
-   → spawns Claude Code with planner prompt + seed payload
+   → spawns Claude Code with planner instructions + initial prompt payload
    → streams output, finds <<SIGNAL:plan_ready>>
    → publishes to yrr/dev-pipeline/plan_ready
 

@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
-use crate::error::{YrrError, Result};
+use crate::error::{Result, YrrError};
 use crate::schema::{
-    AgentDef, AgentFile, AgentInlineDef, AgentRef, DispatchConfig, YrrFile, SwarmDef,
-    SwarmFile,
+    AgentDef, AgentFile, AgentInlineDef, AgentRef, DispatchConfig, SwarmDef, SwarmFile, YrrFile,
 };
 
 /// Load a YAML file and parse it as either an agent or swarm.
@@ -37,8 +36,8 @@ pub struct ResolvedSwarm {
     pub entry: Vec<String>,
     pub done: Vec<String>,
     pub output: Vec<String>,
-    /// Default seed message from the swarm definition.
-    pub seed_message: Option<String>,
+    /// Default prompt message from the swarm definition.
+    pub prompt_message: Option<String>,
 }
 
 /// A fully resolved agent within a swarm — definition + orchestration.
@@ -89,7 +88,7 @@ pub fn resolve_swarm(swarm: &SwarmDef, base_dir: &Path) -> Result<ResolvedSwarm>
         entry: swarm.entry.clone().into_vec(),
         done: swarm.done.clone().unwrap_or_default(),
         output: swarm.output.clone().unwrap_or_default(),
-        seed_message: swarm.seed.clone(),
+        prompt_message: swarm.prompt.clone(),
     })
 }
 
@@ -354,7 +353,10 @@ swarm:
                 agent.swarm_key,
             );
             assert!(
-                agent.def.prompt.contains("Always read the README before doing anything."),
+                agent
+                    .def
+                    .prompt
+                    .contains("Always read the README before doing anything."),
                 "agent '{}' missing project prompt content",
                 agent.swarm_key,
             );

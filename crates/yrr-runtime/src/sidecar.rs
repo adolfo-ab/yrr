@@ -3,15 +3,15 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use chrono::Utc;
+use tokio::sync::mpsc;
+use tracing::{error, info, warn};
+use uuid::Uuid;
+use yrr_bus::bus::{BusQuery, SignalBus};
 use yrr_core::config::Config;
 use yrr_core::error::Result;
 use yrr_core::message::{AgentOutput, QueryReply, SignalMessage, TokenUsage};
 use yrr_core::runtime::AgentRuntime;
 use yrr_core::schema::{AgentDef, ContextLimitAction, Lifecycle, LifecycleMode};
-use yrr_bus::bus::{BusQuery, SignalBus};
-use tokio::sync::mpsc;
-use tracing::{error, info, warn};
-use uuid::Uuid;
 
 use crate::events::{self, EventSender, SwarmEvent};
 
@@ -361,15 +361,18 @@ impl AgentSidecar {
                         "signal received"
                     );
 
-                    events::emit(&self.event_tx, SwarmEvent::SignalReceived {
-                        agent_id: self.agent_id.clone(),
-                        agent_name: self.agent_def.name.clone(),
-                        signal: msg.signal.clone(),
-                        from_agent: msg.source_agent_name.clone(),
-                        payload: msg.payload.clone(),
-                        correlation_id: msg.correlation_id,
-                        timestamp: msg.timestamp,
-                    });
+                    events::emit(
+                        &self.event_tx,
+                        SwarmEvent::SignalReceived {
+                            agent_id: self.agent_id.clone(),
+                            agent_name: self.agent_def.name.clone(),
+                            signal: msg.signal.clone(),
+                            from_agent: msg.source_agent_name.clone(),
+                            payload: msg.payload.clone(),
+                            correlation_id: msg.correlation_id,
+                            timestamp: msg.timestamp,
+                        },
+                    );
 
                     // Check if this signal needs collecting.
                     if let Some(&needed) = self.collect.get(&msg.signal) {
@@ -398,30 +401,39 @@ impl AgentSidecar {
                         if has_pooled {
                             self.bus.publish_status(&self.agent_id, "busy").await?;
                         }
-                        events::emit(&self.event_tx, SwarmEvent::ActivationStarted {
-                            agent_id: self.agent_id.clone(),
-                            agent_name: self.agent_def.name.clone(),
-                            trigger_signal: combined_msg.signal.clone(),
-                        });
+                        events::emit(
+                            &self.event_tx,
+                            SwarmEvent::ActivationStarted {
+                                agent_id: self.agent_id.clone(),
+                                agent_name: self.agent_def.name.clone(),
+                                trigger_signal: combined_msg.signal.clone(),
+                            },
+                        );
                         let activation_start = Instant::now();
                         match self.activate(&combined_msg, session_id.as_deref()).await {
                             Ok(result) => {
-                                events::emit(&self.event_tx, SwarmEvent::ActivationCompleted {
-                                    agent_id: self.agent_id.clone(),
-                                    agent_name: self.agent_def.name.clone(),
-                                    duration_ms: activation_start.elapsed().as_millis() as u64,
-                                });
+                                events::emit(
+                                    &self.event_tx,
+                                    SwarmEvent::ActivationCompleted {
+                                        agent_id: self.agent_id.clone(),
+                                        agent_name: self.agent_def.name.clone(),
+                                        duration_ms: activation_start.elapsed().as_millis() as u64,
+                                    },
+                                );
                                 session_id = result.session_id;
                                 if let Some(ref usage) = result.usage {
                                     last_input_tokens = usage.input_tokens;
                                 }
                             }
                             Err(e) => {
-                                events::emit(&self.event_tx, SwarmEvent::ActivationFailed {
-                                    agent_id: self.agent_id.clone(),
-                                    agent_name: self.agent_def.name.clone(),
-                                    error: e.to_string(),
-                                });
+                                events::emit(
+                                    &self.event_tx,
+                                    SwarmEvent::ActivationFailed {
+                                        agent_id: self.agent_id.clone(),
+                                        agent_name: self.agent_def.name.clone(),
+                                        error: e.to_string(),
+                                    },
+                                );
                                 if has_pooled {
                                     self.bus.publish_status(&self.agent_id, "idle").await?;
                                 }
@@ -435,30 +447,39 @@ impl AgentSidecar {
                         if has_pooled {
                             self.bus.publish_status(&self.agent_id, "busy").await?;
                         }
-                        events::emit(&self.event_tx, SwarmEvent::ActivationStarted {
-                            agent_id: self.agent_id.clone(),
-                            agent_name: self.agent_def.name.clone(),
-                            trigger_signal: msg.signal.clone(),
-                        });
+                        events::emit(
+                            &self.event_tx,
+                            SwarmEvent::ActivationStarted {
+                                agent_id: self.agent_id.clone(),
+                                agent_name: self.agent_def.name.clone(),
+                                trigger_signal: msg.signal.clone(),
+                            },
+                        );
                         let activation_start = Instant::now();
                         match self.activate(&msg, session_id.as_deref()).await {
                             Ok(result) => {
-                                events::emit(&self.event_tx, SwarmEvent::ActivationCompleted {
-                                    agent_id: self.agent_id.clone(),
-                                    agent_name: self.agent_def.name.clone(),
-                                    duration_ms: activation_start.elapsed().as_millis() as u64,
-                                });
+                                events::emit(
+                                    &self.event_tx,
+                                    SwarmEvent::ActivationCompleted {
+                                        agent_id: self.agent_id.clone(),
+                                        agent_name: self.agent_def.name.clone(),
+                                        duration_ms: activation_start.elapsed().as_millis() as u64,
+                                    },
+                                );
                                 session_id = result.session_id;
                                 if let Some(ref usage) = result.usage {
                                     last_input_tokens = usage.input_tokens;
                                 }
                             }
                             Err(e) => {
-                                events::emit(&self.event_tx, SwarmEvent::ActivationFailed {
-                                    agent_id: self.agent_id.clone(),
-                                    agent_name: self.agent_def.name.clone(),
-                                    error: e.to_string(),
-                                });
+                                events::emit(
+                                    &self.event_tx,
+                                    SwarmEvent::ActivationFailed {
+                                        agent_id: self.agent_id.clone(),
+                                        agent_name: self.agent_def.name.clone(),
+                                        error: e.to_string(),
+                                    },
+                                );
                                 if has_pooled {
                                     self.bus.publish_status(&self.agent_id, "idle").await?;
                                 }
@@ -481,15 +502,17 @@ impl AgentSidecar {
                         "steer message received from human"
                     );
 
-                    events::emit(&self.event_tx, SwarmEvent::SteerReceived {
-                        agent_id: self.agent_id.clone(),
-                        agent_name: self.agent_def.name.clone(),
-                        payload: payload.clone(),
-                    });
-
-                    let steer_input = format!(
-                        "--- Human Steering ---\n{payload}\n--- End Steering ---"
+                    events::emit(
+                        &self.event_tx,
+                        SwarmEvent::SteerReceived {
+                            agent_id: self.agent_id.clone(),
+                            agent_name: self.agent_def.name.clone(),
+                            payload: payload.clone(),
+                        },
                     );
+
+                    let steer_input =
+                        format!("--- Human Steering ---\n{payload}\n--- End Steering ---");
 
                     let msg = SignalMessage::new(
                         "human",
@@ -503,30 +526,39 @@ impl AgentSidecar {
                     if has_pooled {
                         self.bus.publish_status(&self.agent_id, "busy").await?;
                     }
-                    events::emit(&self.event_tx, SwarmEvent::ActivationStarted {
-                        agent_id: self.agent_id.clone(),
-                        agent_name: self.agent_def.name.clone(),
-                        trigger_signal: "__steer__".into(),
-                    });
+                    events::emit(
+                        &self.event_tx,
+                        SwarmEvent::ActivationStarted {
+                            agent_id: self.agent_id.clone(),
+                            agent_name: self.agent_def.name.clone(),
+                            trigger_signal: "__steer__".into(),
+                        },
+                    );
                     let activation_start = Instant::now();
                     match self.activate(&msg, session_id.as_deref()).await {
                         Ok(result) => {
-                            events::emit(&self.event_tx, SwarmEvent::ActivationCompleted {
-                                agent_id: self.agent_id.clone(),
-                                agent_name: self.agent_def.name.clone(),
-                                duration_ms: activation_start.elapsed().as_millis() as u64,
-                            });
+                            events::emit(
+                                &self.event_tx,
+                                SwarmEvent::ActivationCompleted {
+                                    agent_id: self.agent_id.clone(),
+                                    agent_name: self.agent_def.name.clone(),
+                                    duration_ms: activation_start.elapsed().as_millis() as u64,
+                                },
+                            );
                             session_id = result.session_id;
                             if let Some(ref usage) = result.usage {
                                 last_input_tokens = usage.input_tokens;
                             }
                         }
                         Err(e) => {
-                            events::emit(&self.event_tx, SwarmEvent::ActivationFailed {
-                                agent_id: self.agent_id.clone(),
-                                agent_name: self.agent_def.name.clone(),
-                                error: e.to_string(),
-                            });
+                            events::emit(
+                                &self.event_tx,
+                                SwarmEvent::ActivationFailed {
+                                    agent_id: self.agent_id.clone(),
+                                    agent_name: self.agent_def.name.clone(),
+                                    error: e.to_string(),
+                                },
+                            );
                             if has_pooled {
                                 self.bus.publish_status(&self.agent_id, "idle").await?;
                             }
@@ -596,11 +628,14 @@ impl AgentSidecar {
             "agent sidecar stopped"
         );
 
-        events::emit(&self.event_tx, SwarmEvent::AgentStopped {
-            agent_id: self.agent_id.clone(),
-            agent_name: self.agent_def.name.clone(),
-            reason: format!("{exit_reason} (activations={activation_count})"),
-        });
+        events::emit(
+            &self.event_tx,
+            SwarmEvent::AgentStopped {
+                agent_id: self.agent_id.clone(),
+                agent_name: self.agent_def.name.clone(),
+                reason: format!("{exit_reason} (activations={activation_count})"),
+            },
+        );
 
         Ok(())
     }
@@ -673,7 +708,11 @@ impl AgentSidecar {
         for iteration in 0..=self.max_query_iterations {
             let output = match self
                 .runtime
-                .run(&self.agent_def, &current_input, current_session_id.as_deref())
+                .run(
+                    &self.agent_def,
+                    &current_input,
+                    current_session_id.as_deref(),
+                )
                 .await
             {
                 Ok(out) => out,
@@ -867,14 +906,17 @@ impl AgentSidecar {
             self.bus.publish(&emitted.signal, &msg).await?;
             published_count += 1;
 
-            events::emit(&self.event_tx, SwarmEvent::SignalEmitted {
-                agent_id: self.agent_id.clone(),
-                agent_name: self.agent_def.name.clone(),
-                signal: emitted.signal.clone(),
-                payload: emitted.payload.clone(),
-                correlation_id: input.correlation_id,
-                timestamp: Utc::now(),
-            });
+            events::emit(
+                &self.event_tx,
+                SwarmEvent::SignalEmitted {
+                    agent_id: self.agent_id.clone(),
+                    agent_name: self.agent_def.name.clone(),
+                    signal: emitted.signal.clone(),
+                    payload: emitted.payload.clone(),
+                    correlation_id: input.correlation_id,
+                    timestamp: Utc::now(),
+                },
+            );
         }
 
         // Fallback: if no valid signals were published and the agent has
@@ -901,14 +943,17 @@ impl AgentSidecar {
 
             self.bus.publish(&entry.name, &msg).await?;
 
-            events::emit(&self.event_tx, SwarmEvent::SignalEmitted {
-                agent_id: self.agent_id.clone(),
-                agent_name: self.agent_def.name.clone(),
-                signal: entry.name.clone(),
-                payload: output.content.clone(),
-                correlation_id: input.correlation_id,
-                timestamp: Utc::now(),
-            });
+            events::emit(
+                &self.event_tx,
+                SwarmEvent::SignalEmitted {
+                    agent_id: self.agent_id.clone(),
+                    agent_name: self.agent_def.name.clone(),
+                    signal: entry.name.clone(),
+                    payload: output.content.clone(),
+                    correlation_id: input.correlation_id,
+                    timestamp: Utc::now(),
+                },
+            );
         } else if published_count == 0 {
             warn!(
                 agent = %self.agent_def.name,

@@ -105,10 +105,7 @@ mod tests {
             mapper.key_to_signal("yrr/dev-pipeline/plan_ready"),
             Some("plan_ready")
         );
-        assert_eq!(
-            mapper.key_to_signal("yrr/other-ns/plan_ready"),
-            None
-        );
+        assert_eq!(mapper.key_to_signal("yrr/other-ns/plan_ready"), None);
     }
 
     #[test]
@@ -127,14 +124,8 @@ mod tests {
             mapper.key_to_queryable("yrr/dev-pipeline/q/review"),
             Some("review")
         );
-        assert_eq!(
-            mapper.key_to_queryable("yrr/dev-pipeline/review"),
-            None
-        );
-        assert_eq!(
-            mapper.key_to_queryable("yrr/other-ns/q/review"),
-            None
-        );
+        assert_eq!(mapper.key_to_queryable("yrr/dev-pipeline/review"), None);
+        assert_eq!(mapper.key_to_queryable("yrr/other-ns/q/review"), None);
     }
 
     #[test]
@@ -149,10 +140,7 @@ mod tests {
     #[test]
     fn status_wildcard_mapping() {
         let mapper = SignalMapper::new("dev-pipeline");
-        assert_eq!(
-            mapper.status_wildcard(),
-            "yrr/dev-pipeline/_agent/*/status"
-        );
+        assert_eq!(mapper.status_wildcard(), "yrr/dev-pipeline/_agent/*/status");
     }
 
     #[test]

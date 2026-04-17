@@ -1,12 +1,12 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
 
+use tokio::sync::mpsc;
+use tracing::{debug, info, warn};
 use yrr_bus::bus::SignalBus;
 use yrr_core::error::Result;
 use yrr_core::message::SignalMessage;
 use yrr_core::schema::{DispatchConfig, DispatchRule, DispatchStrategy, SignalList};
-use tokio::sync::mpsc;
-use tracing::{debug, info, warn};
 
 use crate::events::{self, EventSender, SwarmEvent};
 
@@ -175,10 +175,13 @@ impl Dispatcher {
                 "all replicas busy, queuing signal"
             );
             self.queue.push_back((signal.clone(), msg));
-            events::emit(&self.event_tx, SwarmEvent::SignalQueued {
-                signal,
-                queue_len: self.queue.len(),
-            });
+            events::emit(
+                &self.event_tx,
+                SwarmEvent::SignalQueued {
+                    signal,
+                    queue_len: self.queue.len(),
+                },
+            );
             return Ok(());
         }
 
@@ -190,10 +193,13 @@ impl Dispatcher {
                 "dispatching signal to replica"
             );
             self.bus.dispatch_to(agent_id, &msg).await?;
-            events::emit(&self.event_tx, SwarmEvent::SignalDispatched {
-                signal: signal.clone(),
-                target_agent_id: agent_id.clone(),
-            });
+            events::emit(
+                &self.event_tx,
+                SwarmEvent::SignalDispatched {
+                    signal: signal.clone(),
+                    target_agent_id: agent_id.clone(),
+                },
+            );
         }
 
         // Mark selected replicas as busy.
@@ -277,10 +283,13 @@ impl Dispatcher {
             );
 
             self.bus.dispatch_to(agent_id, &msg).await?;
-            events::emit(&self.event_tx, SwarmEvent::SignalDispatched {
-                signal,
-                target_agent_id: agent_id.clone(),
-            });
+            events::emit(
+                &self.event_tx,
+                SwarmEvent::SignalDispatched {
+                    signal,
+                    target_agent_id: agent_id.clone(),
+                },
+            );
 
             if let Some(replica) = self.replicas.iter_mut().find(|r| r.agent_id == *agent_id) {
                 replica.status = ReplicaStatus::Busy;
@@ -321,8 +330,7 @@ impl Dispatcher {
                     selected.push(self.replicas[idle_ids[idx]].agent_id.clone());
                 }
 
-                *self.rr_index.get_mut(signal).unwrap() =
-                    (*start + to_select) % idle_ids.len();
+                *self.rr_index.get_mut(signal).unwrap() = (*start + to_select) % idle_ids.len();
 
                 selected
             }

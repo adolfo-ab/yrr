@@ -325,7 +325,7 @@ Swarms can be triggered on a schedule:
 swarm:
   name: nightly-audit
   cron: "0 2 * * *"
-  seed: "Run nightly audit"
+  prompt: "Run nightly audit"
 
   agents:
     auditor:
@@ -339,9 +339,9 @@ Multiple schedules:
 ```yaml
 cron:
   - schedule: "0 2 * * 1-5"
-    seed: "Run weekday maintenance"
+    prompt: "Run weekday maintenance"
   - schedule: "0 4 * * 0"
-    seed: "Run deep weekly audit"
+    prompt: "Run deep weekly audit"
 ```
 
 ## Signal Payloads

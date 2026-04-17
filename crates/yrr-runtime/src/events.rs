@@ -58,7 +58,7 @@ pub enum SwarmEvent {
         signal: String,
         queue_len: usize,
     },
-    SeedInjected {
+    PromptInjected {
         signal: String,
     },
     DoneReceived {

@@ -2,8 +2,8 @@ mod graph;
 mod info_panel;
 mod inspect;
 mod logs;
+mod prompt_input;
 mod quit_confirm;
-mod seed_input;
 mod status_bar;
 mod steer_input;
 pub mod theme;
@@ -28,7 +28,7 @@ fn render_preview(frame: &mut Frame, app: &mut App, area: Rect) {
     let chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
-            Constraint::Min(0),   // Content
+            Constraint::Min(0),    // Content
             Constraint::Length(1), // Status bar
         ])
         .split(area);
@@ -39,8 +39,8 @@ fn render_preview(frame: &mut Frame, app: &mut App, area: Rect) {
                 let hsplit = Layout::default()
                     .direction(Direction::Horizontal)
                     .constraints([
-                        Constraint::Min(0),      // Graph
-                        Constraint::Length(36),   // Info panel
+                        Constraint::Min(0),     // Graph
+                        Constraint::Length(36), // Info panel
                     ])
                     .split(chunks[0]);
                 graph::render(frame, app, hsplit[0]);
@@ -54,9 +54,9 @@ fn render_preview(frame: &mut Frame, app: &mut App, area: Rect) {
 
     status_bar::render(frame, app, chunks[1]);
 
-    // Seed input overlay (on top of everything).
-    if let Some(input) = &app.seed_input {
-        seed_input::render(frame, input, area);
+    // Prompt input overlay (on top of everything).
+    if let Some(input) = &app.prompt_input {
+        prompt_input::render(frame, input, area);
     }
 
     if app.confirm_quit {
@@ -70,7 +70,7 @@ fn render_running(frame: &mut Frame, app: &mut App, area: Rect) {
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Tab bar
-            Constraint::Min(0),   // Content
+            Constraint::Min(0),    // Content
             Constraint::Length(1), // Status bar
         ])
         .split(area);
@@ -105,10 +105,7 @@ fn render_running(frame: &mut Frame, app: &mut App, area: Rect) {
                 if app.selected_agent_info().is_some() {
                     let hsplit = Layout::default()
                         .direction(Direction::Horizontal)
-                        .constraints([
-                            Constraint::Min(0),
-                            Constraint::Length(36),
-                        ])
+                        .constraints([Constraint::Min(0), Constraint::Length(36)])
                         .split(chunks[1]);
                     graph::render(frame, app, hsplit[0]);
                     info_panel::render(frame, app, hsplit[1]);

@@ -1,11 +1,11 @@
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph};
 
-use crate::app::SeedInput;
+use crate::app::PromptInput;
 
 use super::theme;
 
-pub fn render(frame: &mut Frame, input: &SeedInput, area: Rect) {
+pub fn render(frame: &mut Frame, input: &PromptInput, area: Rect) {
     // Center a dialog box.
     let width = (area.width - 4).min(80);
     let height = 5;
@@ -18,7 +18,7 @@ pub fn render(frame: &mut Frame, input: &SeedInput, area: Rect) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .title(" Seed message ")
+        .title(" Prompt message ")
         .title_style(
             Style::default()
                 .fg(theme::ORANGE)
@@ -47,8 +47,8 @@ pub fn render(frame: &mut Frame, input: &SeedInput, area: Rect) {
     // Hint line.
     if inner.height > 1 {
         let hint_area = Rect::new(inner.x, inner.y + 2, inner.width, 1);
-        let hint = Paragraph::new("[Enter] run  [Esc] cancel")
-            .style(Style::default().fg(theme::FG_DARK));
+        let hint =
+            Paragraph::new("[Enter] run  [Esc] cancel").style(Style::default().fg(theme::FG_DARK));
         frame.render_widget(hint, hint_area);
     }
 

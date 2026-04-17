@@ -99,9 +99,7 @@ impl<'de> Deserialize<'de> for SignalList {
             type Value = SignalList;
 
             fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                f.write_str(
-                    "a list of signal names or a map of signal name → payload description",
-                )
+                f.write_str("a list of signal names or a map of signal name → payload description")
             }
 
             /// Bare list: `[task_received, review_failed]`
@@ -209,7 +207,9 @@ impl<'de> Deserialize<'de> for Steer {
                 if v {
                     Ok(Steer::Enabled)
                 } else {
-                    Err(E::custom("steer: false is not valid, omit the field instead"))
+                    Err(E::custom(
+                        "steer: false is not valid, omit the field instead",
+                    ))
                 }
             }
 
@@ -330,7 +330,7 @@ pub struct SwarmDef {
     #[serde(default)]
     pub cron: Option<CronConfig>,
     #[serde(default)]
-    pub seed: Option<String>,
+    pub prompt: Option<String>,
 }
 
 /// Reference to an agent — either `use: path` or inline definition.
@@ -452,15 +452,13 @@ impl DispatchConfig {
                     Some(rule)
                 }
             }
-            DispatchConfig::PerSignal(map) => {
-                map.get(signal).and_then(|rule| {
-                    if rule.mode == DispatchMode::Broadcast {
-                        None
-                    } else {
-                        Some(rule)
-                    }
-                })
-            }
+            DispatchConfig::PerSignal(map) => map.get(signal).and_then(|rule| {
+                if rule.mode == DispatchMode::Broadcast {
+                    None
+                } else {
+                    Some(rule)
+                }
+            }),
         }
     }
 
@@ -579,7 +577,7 @@ pub enum CronConfig {
 pub struct CronEntry {
     pub schedule: String,
     #[serde(default)]
-    pub seed: Option<String>,
+    pub prompt: Option<String>,
 }
 
 /// A string or a list of strings (for `entry` and similar fields).
@@ -782,7 +780,7 @@ swarm:
 swarm:
   name: nightly
   cron: "0 2 * * *"
-  seed: "Run audit"
+  prompt: "Run audit"
   agents:
     auditor:
       runtime: script
@@ -797,7 +795,7 @@ swarm:
             Some(CronConfig::Single(s)) => assert_eq!(s, "0 2 * * *"),
             _ => panic!("expected single cron"),
         }
-        assert_eq!(file.swarm.seed, Some("Run audit".into()));
+        assert_eq!(file.swarm.prompt, Some("Run audit".into()));
     }
 
     #[test]
@@ -1208,9 +1206,7 @@ agent:
 
     #[test]
     fn signal_list_collect_from_strings() {
-        let list: SignalList = vec!["a".to_string(), "b".to_string()]
-            .into_iter()
-            .collect();
+        let list: SignalList = vec!["a".to_string(), "b".to_string()].into_iter().collect();
         assert_eq!(list.len(), 2);
         assert!(list.contains("a"));
         assert!(list.contains("b"));
@@ -1305,7 +1301,10 @@ agent:
 "#;
         let file: AgentFile = serde_yaml_ng::from_str(yaml).unwrap();
         let steer = file.agent.steer.unwrap();
-        assert_eq!(steer.description(), Some("provide guidance on architecture"));
+        assert_eq!(
+            steer.description(),
+            Some("provide guidance on architecture")
+        );
     }
 
     #[test]

@@ -8,7 +8,7 @@ use uuid::Uuid;
 pub struct SignalMessage {
     /// Unique message ID.
     pub id: Uuid,
-    /// Correlation ID — tracks the entire chain of signals from the initial seed.
+    /// Correlation ID — tracks the entire chain of signals from the initial prompt.
     pub correlation_id: Uuid,
     /// Which agent emitted this signal (unique agent instance ID).
     pub source_agent_id: String,
@@ -46,14 +46,14 @@ impl SignalMessage {
         }
     }
 
-    /// Create a seed message — the initial message that kicks off a swarm.
-    pub fn seed(signal: impl Into<String>, payload: impl Into<String>) -> Self {
+    /// Create a prompt message — the initial message that kicks off a swarm.
+    pub fn prompt(signal: impl Into<String>, payload: impl Into<String>) -> Self {
         let correlation_id = Uuid::new_v4();
         Self {
             id: Uuid::new_v4(),
             correlation_id,
             source_agent_id: "yrr-cli".into(),
-            source_agent_name: "seed".into(),
+            source_agent_name: "prompt".into(),
             signal: signal.into(),
             payload: payload.into(),
             timestamp: Utc::now(),
@@ -141,11 +141,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn seed_message_has_correct_defaults() {
-        let msg = SignalMessage::seed("task_received", "Add a login page");
+    fn prompt_message_has_correct_defaults() {
+        let msg = SignalMessage::prompt("task_received", "Add a login page");
         assert_eq!(msg.signal, "task_received");
         assert_eq!(msg.payload, "Add a login page");
-        assert_eq!(msg.source_agent_name, "seed");
+        assert_eq!(msg.source_agent_name, "prompt");
         assert!(msg.trace.is_empty());
         assert_eq!(msg.id, msg.id); // uuid was generated
         assert_eq!(msg.correlation_id, msg.correlation_id);
@@ -153,16 +153,16 @@ mod tests {
 
     #[test]
     fn child_trace_appends() {
-        let msg = SignalMessage::seed("task_received", "do stuff");
+        let msg = SignalMessage::prompt("task_received", "do stuff");
         let child_trace = msg.child_trace();
         assert_eq!(child_trace.len(), 1);
         assert_eq!(child_trace[0].signal, "task_received");
-        assert_eq!(child_trace[0].agent_name, "seed");
+        assert_eq!(child_trace[0].agent_name, "prompt");
     }
 
     #[test]
     fn signal_message_serializes_to_json() {
-        let msg = SignalMessage::seed("plan_ready", "Plan written to PLAN.md");
+        let msg = SignalMessage::prompt("plan_ready", "Plan written to PLAN.md");
         let json = serde_json::to_string(&msg).unwrap();
         let parsed: SignalMessage = serde_json::from_str(&json).unwrap();
         assert_eq!(parsed.signal, "plan_ready");

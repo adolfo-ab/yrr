@@ -1,10 +1,10 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use yrr_core::error::{YrrError, Result};
-use yrr_core::message::SignalMessage;
 use tokio::sync::mpsc;
 use tracing::{debug, error, info};
+use yrr_core::error::{Result, YrrError};
+use yrr_core::message::SignalMessage;
 
 use crate::bus::{BusQuery, SignalBus};
 use crate::mapper::SignalMapper;
@@ -29,10 +29,7 @@ impl ZenohBus {
     }
 
     /// Open with an existing Zenoh config.
-    pub async fn with_config(
-        namespace: impl Into<String>,
-        config: zenoh::Config,
-    ) -> Result<Self> {
+    pub async fn with_config(namespace: impl Into<String>, config: zenoh::Config) -> Result<Self> {
         let session = zenoh::open(config)
             .await
             .map_err(|e| YrrError::Bus(format!("failed to open zenoh session: {e}")))?;
@@ -48,8 +45,7 @@ impl ZenohBus {
 impl SignalBus for ZenohBus {
     async fn publish(&self, signal: &str, message: &SignalMessage) -> Result<()> {
         let key = self.mapper.signal_to_key(signal);
-        let payload =
-            serde_json::to_vec(message).map_err(|e| YrrError::Bus(e.to_string()))?;
+        let payload = serde_json::to_vec(message).map_err(|e| YrrError::Bus(e.to_string()))?;
 
         debug!(
             signal,
@@ -119,9 +115,7 @@ impl SignalBus for ZenohBus {
             .session
             .declare_queryable(&zenoh_key)
             .await
-            .map_err(|e| {
-                YrrError::Bus(format!("failed to declare queryable {zenoh_key}: {e}"))
-            })?;
+            .map_err(|e| YrrError::Bus(format!("failed to declare queryable {zenoh_key}: {e}")))?;
 
         tokio::spawn(async move {
             loop {
@@ -129,20 +123,13 @@ impl SignalBus for ZenohBus {
                     Ok(query) => {
                         let payload = query
                             .payload()
-                            .map(|p| {
-                                String::from_utf8(p.to_bytes().to_vec())
-                                    .unwrap_or_default()
-                            })
+                            .map(|p| String::from_utf8(p.to_bytes().to_vec()).unwrap_or_default())
                             .unwrap_or_default();
 
                         let key_expr = query.key_expr().to_string();
                         let (reply_tx, reply_rx) = tokio::sync::oneshot::channel();
 
-                        let bus_query = BusQuery::new(
-                            queryable_key.clone(),
-                            payload,
-                            reply_tx,
-                        );
+                        let bus_query = BusQuery::new(queryable_key.clone(), payload, reply_tx);
 
                         if tx.send(bus_query).await.is_err() {
                             break; // receiver dropped
@@ -162,9 +149,7 @@ impl SignalBus for ZenohBus {
                             }
                             Err(_) => {
                                 // reply_tx was dropped without sending — agent failed
-                                let _ = query
-                                    .reply_err("handler dropped without replying")
-                                    .await;
+                                let _ = query.reply_err("handler dropped without replying").await;
                             }
                         }
                     }
@@ -203,9 +188,7 @@ impl SignalBus for ZenohBus {
                 Err(err) => {
                     let bytes = err.payload().to_bytes();
                     let msg = String::from_utf8_lossy(&bytes);
-                    Err(YrrError::Query(format!(
-                        "queryable returned error: {msg}"
-                    )))
+                    Err(YrrError::Query(format!("queryable returned error: {msg}")))
                 }
             },
             Err(_) => Err(YrrError::Query(format!(
@@ -237,9 +220,7 @@ impl SignalBus for ZenohBus {
             .session
             .declare_subscriber(&key)
             .await
-            .map_err(|e| {
-                YrrError::Bus(format!("failed to subscribe to status {key}: {e}"))
-            })?;
+            .map_err(|e| YrrError::Bus(format!("failed to subscribe to status {key}: {e}")))?;
 
         let mapper = SignalMapper::new(self.mapper.namespace());
 
@@ -248,10 +229,8 @@ impl SignalBus for ZenohBus {
                 match subscriber.recv_async().await {
                     Ok(sample) => {
                         let key_str = sample.key_expr().to_string();
-                        let status = String::from_utf8(
-                            sample.payload().to_bytes().to_vec(),
-                        )
-                        .unwrap_or_default();
+                        let status = String::from_utf8(sample.payload().to_bytes().to_vec())
+                            .unwrap_or_default();
 
                         if let Some(agent_id) = mapper.key_to_agent_id(&key_str) {
                             if tx.send((agent_id.to_string(), status)).await.is_err() {
@@ -272,8 +251,7 @@ impl SignalBus for ZenohBus {
 
     async fn dispatch_to(&self, agent_id: &str, message: &SignalMessage) -> Result<()> {
         let key = self.mapper.dispatch_key(agent_id);
-        let payload =
-            serde_json::to_vec(message).map_err(|e| YrrError::Bus(e.to_string()))?;
+        let payload = serde_json::to_vec(message).map_err(|e| YrrError::Bus(e.to_string()))?;
 
         debug!(
             agent_id,
@@ -296,11 +274,8 @@ impl SignalBus for ZenohBus {
 
         info!(agent_id, key = %key, "subscribing to dispatch channel");
 
-        let subscriber = self
-            .session
-            .declare_subscriber(&key)
-            .await
-            .map_err(|e| {
+        let subscriber =
+            self.session.declare_subscriber(&key).await.map_err(|e| {
                 YrrError::Bus(format!("failed to subscribe to dispatch {key}: {e}"))
             })?;
 
@@ -354,18 +329,14 @@ impl SignalBus for ZenohBus {
             .session
             .declare_subscriber(&key)
             .await
-            .map_err(|e| {
-                YrrError::Bus(format!("failed to subscribe to steer {key}: {e}"))
-            })?;
+            .map_err(|e| YrrError::Bus(format!("failed to subscribe to steer {key}: {e}")))?;
 
         tokio::spawn(async move {
             loop {
                 match subscriber.recv_async().await {
                     Ok(sample) => {
-                        let payload = String::from_utf8(
-                            sample.payload().to_bytes().to_vec(),
-                        )
-                        .unwrap_or_default();
+                        let payload = String::from_utf8(sample.payload().to_bytes().to_vec())
+                            .unwrap_or_default();
 
                         if tx.send(payload).await.is_err() {
                             break;

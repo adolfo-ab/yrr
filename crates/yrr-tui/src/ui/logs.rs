@@ -40,7 +40,9 @@ fn render_log_list(frame: &mut Frame, app: &mut App, area: Rect) {
     frame.render_widget(block, area);
 
     // Draw column headers.
-    let header_style = Style::default().fg(theme::FG_DARK).add_modifier(Modifier::BOLD);
+    let header_style = Style::default()
+        .fg(theme::FG_DARK)
+        .add_modifier(Modifier::BOLD);
     let header = Line::from(vec![
         Span::styled(" ", header_style),
         Span::styled("TIME        ", header_style),
@@ -51,11 +53,16 @@ fn render_log_list(frame: &mut Frame, app: &mut App, area: Rect) {
     let header_area = Rect::new(inner.x, inner.y, inner.width, 1);
     frame.render_widget(Paragraph::new(header), header_area);
 
-    let list_area = Rect::new(inner.x, inner.y + 1, inner.width, inner.height.saturating_sub(1));
+    let list_area = Rect::new(
+        inner.x,
+        inner.y + 1,
+        inner.width,
+        inner.height.saturating_sub(1),
+    );
 
     if app.logs.entries.is_empty() {
-        let empty = Paragraph::new("  Waiting for events...")
-            .style(Style::default().fg(theme::FG_DARK));
+        let empty =
+            Paragraph::new("  Waiting for events...").style(Style::default().fg(theme::FG_DARK));
         frame.render_widget(empty, list_area);
         return;
     }
@@ -77,7 +84,10 @@ fn render_log_list(frame: &mut Frame, app: &mut App, area: Rect) {
         }
     }
 
-    let start = app.logs.scroll_offset.min(total.saturating_sub(visible_height));
+    let start = app
+        .logs
+        .scroll_offset
+        .min(total.saturating_sub(visible_height));
     let end = (start + visible_height).min(total);
 
     let time_style = Style::default().fg(theme::FG_DARK);
@@ -102,7 +112,9 @@ fn render_log_list(frame: &mut Frame, app: &mut App, area: Rect) {
                 "error" => Style::default().fg(theme::RED),
                 "spawned" => Style::default().fg(theme::BLUE),
                 "stopped" => Style::default().fg(theme::FG_DARK),
-                "done" => Style::default().fg(theme::VIOLET).add_modifier(Modifier::BOLD),
+                "done" => Style::default()
+                    .fg(theme::VIOLET)
+                    .add_modifier(Modifier::BOLD),
                 "timeout" => Style::default().fg(theme::RED).add_modifier(Modifier::BOLD),
                 "injected" => Style::default().fg(theme::FG).add_modifier(Modifier::BOLD),
                 "dispatched" => Style::default().fg(theme::TEAL),
@@ -149,8 +161,7 @@ fn render_log_list(frame: &mut Frame, app: &mut App, area: Rect) {
             hint.len() as u16,
             1,
         );
-        let hint_widget =
-            Paragraph::new(hint).style(Style::default().fg(theme::FG_DARK));
+        let hint_widget = Paragraph::new(hint).style(Style::default().fg(theme::FG_DARK));
         frame.render_widget(hint_widget, hint_area);
     }
 
@@ -165,10 +176,7 @@ fn render_detail_pane(frame: &mut Frame, app: &mut App, area: Rect) {
     };
 
     let entry = &app.logs.entries[app.logs.cursor];
-    let title = format!(
-        " {} {} ",
-        entry.agent_name, entry.event_type
-    );
+    let title = format!(" {} {} ", entry.agent_name, entry.event_type);
 
     let block = Block::default()
         .borders(Borders::ALL)

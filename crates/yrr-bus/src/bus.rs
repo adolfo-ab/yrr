@@ -1,9 +1,9 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
+use tokio::sync::{mpsc, oneshot};
 use yrr_core::error::Result;
 use yrr_core::message::SignalMessage;
-use tokio::sync::{mpsc, oneshot};
 
 /// An incoming query from the bus. The holder must call `reply()` to respond.
 pub struct BusQuery {

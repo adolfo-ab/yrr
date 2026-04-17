@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU32, Ordering};
 use std::time::Duration;
 
 use anyhow::{Context, Result};
@@ -33,7 +33,7 @@ pub enum SwarmOutcome {
 pub struct SwarmRunner {
     pub resolved: ResolvedSwarm,
     pub config: Config,
-    pub seed: Option<String>,
+    pub prompt: Option<String>,
     pub timeout: Option<Duration>,
     pub event_tx: EventSender,
 }
@@ -47,7 +47,7 @@ impl SwarmRunner {
         let SwarmRunner {
             resolved,
             config,
-            seed,
+            prompt,
             timeout,
             event_tx,
         } = self;
@@ -85,8 +85,7 @@ impl SwarmRunner {
         let mut signal_to_agents: HashMap<String, Vec<usize>> = HashMap::new();
         let mut queryable_to_agents: HashMap<String, Vec<usize>> = HashMap::new();
         // Spawn triggers: signal → [(agent_index, max, active_counter)].
-        let mut spawn_triggers: HashMap<String, Vec<(usize, u32, Arc<AtomicU32>)>> =
-            HashMap::new();
+        let mut spawn_triggers: HashMap<String, Vec<(usize, u32, Arc<AtomicU32>)>> = HashMap::new();
 
         for (idx, agent) in resolved.agents.iter().enumerate() {
             for signal in agent.def.subscribe.names() {
@@ -102,10 +101,11 @@ impl SwarmRunner {
                     .push(idx);
             }
             if let Some(spawn) = &agent.spawn {
-                spawn_triggers
-                    .entry(spawn.on.clone())
-                    .or_default()
-                    .push((idx, spawn.max, Arc::new(AtomicU32::new(0))));
+                spawn_triggers.entry(spawn.on.clone()).or_default().push((
+                    idx,
+                    spawn.max,
+                    Arc::new(AtomicU32::new(0)),
+                ));
             }
         }
 
@@ -152,18 +152,18 @@ impl SwarmRunner {
             );
         }
 
-        // Give sidecars a moment to subscribe before injecting seed.
+        // Give sidecars a moment to subscribe before injecting prompt.
         tokio::time::sleep(Duration::from_millis(500)).await;
 
-        // ── Inject seed ─────────────────────────────────────────────────
-        let seed_text = seed.unwrap_or_else(|| "Start".to_string());
+        // ── Inject prompt ─────────────────────────────────────────────────
+        let prompt_text = prompt.unwrap_or_else(|| "Start".to_string());
         for entry_signal in &resolved.entry {
-            let msg = SignalMessage::seed(entry_signal, &seed_text);
-            info!(signal = %entry_signal, "injecting seed");
+            let msg = SignalMessage::prompt(entry_signal, &prompt_text);
+            info!(signal = %entry_signal, "injecting prompt");
             bus.publish(entry_signal, &msg).await?;
             events::emit(
                 &event_tx,
-                SwarmEvent::SeedInjected {
+                SwarmEvent::PromptInjected {
                     signal: entry_signal.clone(),
                 },
             );
@@ -204,8 +204,8 @@ impl SwarmRunner {
 
         // Helper: spawn pending agents triggered by a signal.
         let try_spawn_for_signal = |msg: &SignalMessage,
-                                         spawned: &mut HashSet<usize>,
-                                         join_set: &mut JoinSet<()>|
+                                    spawned: &mut HashSet<usize>,
+                                    join_set: &mut JoinSet<()>|
          -> bool {
             let mut new_spawns: Vec<usize> = Vec::new();
             if let Some(indices) = signal_to_agents.get(&msg.signal) {

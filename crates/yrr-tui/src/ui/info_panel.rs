@@ -1,7 +1,7 @@
 use ratatui::prelude::*;
 use ratatui::widgets::{Block, BorderType, Borders, Clear, Paragraph, Wrap};
 
-use crate::app::{model_display_name, AgentInfo, App, Phase};
+use crate::app::{AgentInfo, App, Phase, model_display_name};
 
 use super::theme;
 
@@ -18,7 +18,11 @@ pub fn render(frame: &mut Frame, app: &App, area: Rect) {
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
         .title(title)
-        .title_style(Style::default().fg(theme::AQUA).add_modifier(Modifier::BOLD))
+        .title_style(
+            Style::default()
+                .fg(theme::AQUA)
+                .add_modifier(Modifier::BOLD),
+        )
         .border_style(Style::default().fg(theme::BORDER));
 
     let inner = block.inner(area);
@@ -196,10 +200,7 @@ fn build_panel_lines(info: &AgentInfo, spawn_count: Option<u32>) -> Vec<Line<'st
                 lines.push(Line::from(Span::styled("  ...", dim)));
                 break;
             }
-            lines.push(Line::from(Span::styled(
-                format!("  {line}"),
-                value,
-            )));
+            lines.push(Line::from(Span::styled(format!("  {line}"), value)));
         }
     }
 

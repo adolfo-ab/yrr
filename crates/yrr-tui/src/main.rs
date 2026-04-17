@@ -6,6 +6,7 @@ mod ui;
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use chrono::Utc;
 use clap::Parser;
 use crossterm::{
     event::{DisableMouseCapture, EnableMouseCapture},
@@ -13,14 +14,13 @@ use crossterm::{
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
 use ratatui::prelude::*;
-use chrono::Utc;
 use tracing::info;
 
+use yrr_bus::bus::SignalBus;
+use yrr_bus::zenoh_bus::ZenohBus;
 use yrr_core::config::find_config;
 use yrr_core::loader::{load_swarm, resolve_swarm};
 use yrr_core::validation::validate_swarm;
-use yrr_bus::bus::SignalBus;
-use yrr_bus::zenoh_bus::ZenohBus;
 use yrr_runtime::events::SwarmEvent;
 use yrr_runtime::orchestrator::SwarmRunner;
 
@@ -33,9 +33,9 @@ struct Cli {
     /// Path to the swarm YAML file
     swarm: PathBuf,
 
-    /// Initial seed message to inject
+    /// Initial prompt message to inject
     #[arg(long)]
-    seed: Option<String>,
+    prompt: Option<String>,
 
     /// Timeout in seconds
     #[arg(long)]
@@ -50,8 +50,8 @@ struct Cli {
 async fn main() -> Result<()> {
     // Initialize tracing to a file so it doesn't interfere with the TUI.
     {
-        use tracing_subscriber::fmt;
         use tracing_subscriber::EnvFilter;
+        use tracing_subscriber::fmt;
         let log_dir = std::env::current_dir()
             .unwrap_or_default()
             .join(".yrr")
@@ -105,10 +105,14 @@ async fn main() -> Result<()> {
     }
 
     let graph_state = graph::layout::build_graph(&resolved);
-    let agent_info: Vec<AgentInfo> = resolved.agents.iter().map(AgentInfo::from_resolved).collect();
+    let agent_info: Vec<AgentInfo> = resolved
+        .agents
+        .iter()
+        .map(AgentInfo::from_resolved)
+        .collect();
 
-    // Resolve the seed: CLI flag > swarm default.
-    let seed = cli.seed.or(resolved.seed_message.clone());
+    // Resolve the prompt: CLI flag > swarm default.
+    let prompt = cli.prompt.or(resolved.prompt_message.clone());
 
     let yrr_log_dir = std::env::current_dir()
         .unwrap_or_default()
@@ -122,7 +126,7 @@ async fn main() -> Result<()> {
         swarm_path.clone(),
         graph_state,
         agent_info,
-        seed,
+        prompt,
     );
 
     // Setup terminal.
@@ -270,7 +274,7 @@ async fn main() -> Result<()> {
             let runner = SwarmRunner {
                 resolved: run_resolved,
                 config: config.clone(),
-                seed: app.seed.clone(),
+                prompt: app.prompt.clone(),
                 timeout: cli.timeout.map(std::time::Duration::from_secs),
                 event_tx: Some(event_tx),
             };
@@ -351,9 +355,7 @@ fn open_in_editor(
         .unwrap_or_else(|_| "vi".to_string());
 
     // Launch editor (blocking).
-    let status = std::process::Command::new(&editor)
-        .arg(path)
-        .status();
+    let status = std::process::Command::new(&editor).arg(path).status();
 
     match status {
         Ok(s) => info!("editor exited with {s}"),
